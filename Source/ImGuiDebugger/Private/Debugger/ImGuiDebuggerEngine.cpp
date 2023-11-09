@@ -1,6 +1,5 @@
 #include "ImGuiDebuggerEngine.h"
 #include "Kismet/GameplayStatics.h"
-#include <imgui.h>
 
 #define PUSH_ENTRY_SHOWFLAG(_CMD_,_DISPLAY_,_ARG_)\
 		{ FImGuiDebugEntry Entry;\
@@ -23,9 +22,6 @@ FImGuiDebuggerEngine::~FImGuiDebuggerEngine()
 void FImGuiDebuggerEngine::Initialize()
 {
     InitShowFlags();
-
-
-
 }
 
 void FImGuiDebuggerEngine::ShowMenu()
@@ -43,6 +39,7 @@ void FImGuiDebuggerEngine::ShowMenu()
 
 void FImGuiDebuggerEngine::InitShowFlags()
 {
+    // Push some common showflags
     PUSH_ENTRY_SHOWFLAG("ShowFlag.Bounds", "Bounds", false);
 	PUSH_ENTRY_SHOWFLAG("ShowFlag.StaticMeshes", "StaticMesh", true);
 	PUSH_ENTRY_SHOWFLAG("ShowFlag.SkeletalMeshes", "SkeletalMesh", true);
@@ -56,10 +53,8 @@ void FImGuiDebuggerEngine::InitShowFlags()
     PUSH_ENTRY_SHOWFLAG("ShowFlag.Lighting", "Lighting", true);
     PUSH_ENTRY_SHOWFLAG("ShowFlag.Refraction", "Refraction", true);
     PUSH_ENTRY_SHOWFLAG("ShowFlag.GlobalIllumination", "GI", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.LumenGlobalIllumination", "LumenGI", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.LumenReflections", "LumenReflection", false);
     PUSH_ENTRY_SHOWFLAG("ShowFlag.LODColoration", "LOD", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.HLODColoration", "HLOD", false);e
+    PUSH_ENTRY_SHOWFLAG("ShowFlag.HLODColoration", "HLOD", false);
     PUSH_ENTRY_SHOWFLAG("ShowFlag.AntiAliasing", "AntiAliasing", true);
     PUSH_ENTRY_SHOWFLAG("ShowFlag.AmbientOcclusion", "AmbientOcclusion", true); 
     PUSH_ENTRY_SHOWFLAG("ShowFlag.PostProcessing", "PostProcess", true);

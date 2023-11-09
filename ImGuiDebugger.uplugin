@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "0.1",
 	"FriendlyName": "ImGuiDebugger",
-	"Description": "",
+	"Description": "Utilities for debug and profile using ImGui.",
 	"Category": "Other",
 	"CreatedBy": "Yohiro",
 	"CreatedByURL": "",
@@ -19,6 +19,12 @@
 			"Name": "ImGuiDebugger",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ImGui",
+			"Enabled": true
 		}
 	]
 }

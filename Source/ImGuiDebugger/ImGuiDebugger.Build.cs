@@ -28,6 +28,8 @@ public class ImGuiDebugger : ModuleRules
 			new string[]
 			{
 				"Core",
+				"Engine",
+				"DeveloperSettings"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -37,9 +39,9 @@ public class ImGuiDebugger : ModuleRules
 			new string[]
 			{
 				"CoreUObject",
+				"Core",
 				"Engine",
-				"Slate",
-				"SlateCore",
+				"InputCore",
 				"ImGui",
 				// ... add private dependencies that you statically link with here ...	
 			}

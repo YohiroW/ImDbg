@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <imgui.h>
 
 enum EDebugSection: uint8
 {

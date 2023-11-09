@@ -1,6 +1,7 @@
 #include "ImGuiDebuggerManager.h"
 #include "ImGuiDebuggerExtension.h"
 #include "ImGuiDebuggerEngine.h"
+#include "ImGuiDebuggerProfiler.h"
 #include <ImGuiModule.h>
 
 #define WITH_IMGUI_DEBUGGER 1
@@ -23,15 +24,22 @@ void UImGuiDebuggerManager::Initialize()
 
 	FImGuiDebuggerExtension* EngineExt = new FImGuiDebuggerEngine();
 	RegisterDebuggerExtension(EngineExt);
+
+	FImGuiDebuggerStats* StatExt = new FImGuiDebuggerStats();
+	RegisterDebuggerExtension(StatExt);
 }
 
 UImGuiDebuggerManager::~UImGuiDebuggerManager()
 {
-	for(FImGuiDebuggerExtension* DebugExt: Extensions)
+	if (Extensions.Num() == 0)
+	{
+		return;
+	}
+
+	for (FImGuiDebuggerExtension* DebugExt : Extensions)
 	{
 		UnregisterDebuggerExtension(DebugExt);
 	}
-
 }
 
 bool UImGuiDebuggerManager::ProcessConsoleExec(const TCHAR* Cmd, FOutputDevice& Ar, UObject* Executor)
@@ -96,8 +104,7 @@ bool UImGuiDebuggerManager::Refresh(float DeltaTime)
 				ImGui::EndMenu();
 			}
 
-
-			if (ImGui::Button("Report", ImVec2(50,20)))
+			if (ImGui::Button("Report", ImVec2(56,22)))
 			{
 				UE_LOG(LogTemp, Warning, TEXT("On Report Click..."));
 			}
