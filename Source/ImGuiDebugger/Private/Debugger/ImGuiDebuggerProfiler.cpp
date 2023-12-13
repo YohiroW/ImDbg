@@ -1,6 +1,41 @@
 #include "ImGuiDebuggerProfiler.h"
 #include "ImGuiDebugger.h"
 
+#define LOCTEXT_NAMESPACE "ImGuiDebugger"
+
+//
+// The function below is taken from AutomationBlueprintFunctionLibrary.h
+// To avoid add extra dependency
+//
+#if STATS
+template <EComplexStatField::Type ValueType, bool bCallCount = false>
+float HelperGetStat(FName StatName)
+{
+	if (FGameThreadStatsData* StatsData = FLatestGameThreadStatsData::Get().Latest)
+	{
+		if (const FComplexStatMessage* StatMessage = StatsData->GetStatData(StatName))
+		{
+			if (bCallCount)
+			{
+				return (float)StatMessage->GetValue_CallCount(ValueType);
+			}
+			else
+			{
+				return (float)FPlatformTime::ToMilliseconds64(StatMessage->GetValue_Duration(ValueType));
+			}
+		}
+	}
+
+#if WITH_EDITOR
+	FText WarningOut = FText::Format(LOCTEXT("StatNotFound", "Could not find stat data for {0}, did you call ToggleStatGroup with enough time to capture data?"), FText::FromName(StatName));
+	FMessageLog("PIE").Warning(WarningOut);
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *WarningOut.ToString());
+#endif
+
+	return 0.f;
+}
+#endif
+
 FImGuiDebuggerStats::FImGuiDebuggerStats()
 {
 	AddNewFrameDelegate();
@@ -8,8 +43,7 @@ FImGuiDebuggerStats::FImGuiDebuggerStats()
 
 FImGuiDebuggerStats::~FImGuiDebuggerStats()
 {
-	const FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
-	Stats.NewFrameDelegate.Remove(OnNewFrameDelegateHandle);
+	RemoveNewFrameDelegate();
 }
 
 void FImGuiDebuggerStats::ShowMenu()
@@ -17,19 +51,44 @@ void FImGuiDebuggerStats::ShowMenu()
 #if STATS
 	if (ImGui::Button("Check", ImVec2(56, 22)))
 	{
-		GetStats();
+		if (!bIsCollecting)
+		{
+			StartCollectPerfData();
+		}
+		else
+		{
+			StopCollectPerfData();
+		}
 	}
+
+	if (bIsCollecting)
+	{
+		float RenderingTime = HelperGetStat<EComplexStatField::IncAve>(FName(TEXT("STAT_TotalSceneRenderingTime")));
+		UE_LOG(LogImGuiDebugger, Warning, TEXT("RenderingTime : %f]"), RenderingTime);
+	}
+
 #endif
 }
 
 void FImGuiDebuggerStats::AddNewFrameDelegate()
 {
+#if STATS
 	const FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
 	OnNewFrameDelegateHandle = Stats.NewFrameDelegate.AddRaw(this, &FImGuiDebuggerStats::HandleNewFrame);
+#endif
+}
+
+void FImGuiDebuggerStats::RemoveNewFrameDelegate()
+{
+#if STATS
+	const FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
+	Stats.NewFrameDelegate.Remove(OnNewFrameDelegateHandle);
+#endif
 }
 
 void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
 {
+#if STATS
 	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
 	if (!Stats.IsFrameValid(Frame))
 	{
@@ -59,8 +118,7 @@ void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
 
 	// For result
 	TArray<FStatMessage> NonStackStats;
-
-	Stats.UncondenseStackStats(Frame, HierarchyInclusive, &Filter, &NonStackStats);
+	Stats.UncondenseStackStats(Frame, HierarchyInclusive, nullptr, &NonStackStats);
 
 	for (FStatMessage Stat : NonStackStats)
 	{
@@ -83,14 +141,38 @@ void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
 			break;
 		}
 	}
+#endif
 }
 
 void FImGuiDebuggerStats::HandleNewFrameGT()
 {
 }
 
+void FImGuiDebuggerStats::StartCollectPerfData()
+{
+	if (!bIsCollecting)
+	{
+		bIsCollecting = true;
+		StatsPrimaryEnableAdd();
+
+		AddNewFrameDelegate();
+	}
+}
+
+void FImGuiDebuggerStats::StopCollectPerfData()
+{
+	if (bIsCollecting)
+	{
+		RemoveNewFrameDelegate();
+
+		StatsPrimaryEnableSubtract();
+		bIsCollecting = false;
+	}
+}
+
 void FImGuiDebuggerStats::GetStats()
 {
+#if STATS
 	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
 	int64 LastGameFrame = Stats.GetLatestValidFrame();
 
@@ -146,6 +228,7 @@ void FImGuiDebuggerStats::GetStats()
 			break;
 		}
 	}
+#endif
 }
 
 FStatsFetchThread::FStatsFetchThread(FImGuiDebuggerStats& InStatsDebugger)
@@ -170,3 +253,22 @@ void FStatsFetchThread::Stop()
 void FStatsFetchThread::StartThread()
 {
 }
+
+FImGuiDebuggerGPUProfiler::FImGuiDebuggerGPUProfiler()
+{
+	InitializeStats();
+}
+
+FImGuiDebuggerGPUProfiler::~FImGuiDebuggerGPUProfiler()
+{
+}
+
+void FImGuiDebuggerGPUProfiler::ShowMenu()
+{
+}
+
+void FImGuiDebuggerGPUProfiler::InitializeStats()
+{
+}
+
+#undef LOCTEXT_NAMESPACE

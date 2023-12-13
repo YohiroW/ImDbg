@@ -25,6 +25,7 @@ FImGuiDebuggerExtension::FImGuiDebuggerExtension()
 
 FImGuiDebuggerExtension::~FImGuiDebuggerExtension()
 {
+	Release();
 }
 
 void FImGuiDebuggerExtension::RegisterDebuggerEntry(const FImGuiDebugEntry& Entry)
@@ -35,6 +36,16 @@ void FImGuiDebuggerExtension::RegisterDebuggerEntry(const FImGuiDebugEntry& Entr
 void FImGuiDebuggerExtension::UnregisterDebuggerEntry(const FImGuiDebugEntry& Entry)
 {
 	Entries.Remove(Entry);
+}
+
+void FImGuiDebuggerExtension::Release()
+{
+	if (Entries.Num() == 0)
+	{
+		return;
+	}
+
+	Entries.Empty();
 }
 
 void FImGuiDebuggerExtension::ShowMenu()

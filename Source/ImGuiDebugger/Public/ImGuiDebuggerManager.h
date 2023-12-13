@@ -22,11 +22,9 @@ class UImGuiDebuggerManager: public UObject
     GENERATED_UCLASS_BODY()
 
 public:
+	~UImGuiDebuggerManager();
 	void Initialize();
-    ~UImGuiDebuggerManager();
-
-    // dispatch console cmds
-    virtual bool ProcessConsoleExec(const TCHAR* Cmd, FOutputDevice& Ar, UObject* Executor) override;
+	void InitializeImGuiStyle();
 
 	bool ExecuteCommand(const UObject* WorldContextObject, const FString& Command);
 
@@ -35,17 +33,20 @@ public:
 
 	bool Refresh(float DeltaTime);
 
+	void ShowMainMenu(float DeltaTime);
+	void ShowOverlay();
+
 	FVector GetPlayerLocation();
 	void ShowGPUProfiler(bool* bIsOpen);
 
 private:
-    // all registered extensions
+	bool bIsImGuiInitialized = false;
+	bool bIsDebuggerInitialized = false;
+
+    // All registered extensions
     TArray<FImGuiDebuggerExtension*> Extensions;
 
 	FTickerDelegate TickDelegate;
 	FTSTicker::FDelegateHandle TickDelegateHandle;
-
-	bool bRequestShowFlagUpdate;
-
 
 };

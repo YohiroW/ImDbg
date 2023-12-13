@@ -36,8 +36,10 @@ public:
     FImGuiDebuggerExtension();
     virtual ~FImGuiDebuggerExtension();
 
-    void RegisterDebuggerEntry(const FImGuiDebugEntry& Entry);
-    void UnregisterDebuggerEntry(const FImGuiDebugEntry& Entry);
+    virtual void RegisterDebuggerEntry(const FImGuiDebugEntry& Entry);
+    virtual void UnregisterDebuggerEntry(const FImGuiDebugEntry& Entry);
+
+    virtual void Release();
 
     virtual void ShowMenu() override;
 

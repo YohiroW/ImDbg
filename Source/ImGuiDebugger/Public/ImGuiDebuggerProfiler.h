@@ -7,8 +7,12 @@
 
 class FImGuiDebuggerStats;
 
-struct FGroupFilter : public IItemFilter
+struct FGroupFilter 
+#if STATS
+	: public IItemFilter
+#endif
 {
+#if STATS
 	const TSet<FName>& EnabledItems;
 
 	FGroupFilter(const TSet<FName>& InEnabledItems)
@@ -21,6 +25,7 @@ struct FGroupFilter : public IItemFilter
 		const FName MessageName = Item.NameAndInfo.GetRawName();
 		return EnabledItems.Contains(MessageName);
 	}
+#endif
 };
 
 class FStatsFetchThread : public FRunnable
@@ -52,12 +57,33 @@ public:
 	virtual void ShowMenu() override;
 
 	void AddNewFrameDelegate();
+	void RemoveNewFrameDelegate();
+
 	void HandleNewFrame(int64 Frame);
 	void HandleNewFrameGT();
 
+	void StartCollectPerfData();
 	void GetStats();
+	void StopCollectPerfData();
 	
 private:
 	FDelegateHandle OnNewFrameDelegateHandle;
+
+	bool bIsCollecting = false;
+};
+
+class FImGuiDebuggerGPUProfiler : public FImGuiDebuggerExtension
+{
+public:
+	FImGuiDebuggerGPUProfiler();
+	~FImGuiDebuggerGPUProfiler();
+
+	virtual void ShowMenu() override;
+
+	void InitializeStats();
+
+
+private:
+	FImGuiDebuggerStats Stats;
 
 };
