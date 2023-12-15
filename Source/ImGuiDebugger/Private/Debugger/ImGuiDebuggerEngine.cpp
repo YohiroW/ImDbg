@@ -121,9 +121,9 @@ void FImGuiDebuggerEngine::ShowEngineMenuRendering()
 			}
 
 			ImGui::BulletText("SceneColor Format"); ImGui::SameLine(180.0f);
-			const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIIIIII", "JJJJ", "KKKKKKK" };
-			static int item_current = 0;
-			ImGui::Combo("combo", &item_current, items, IM_ARRAYSIZE(items));
+			const char* items[] = { "B8G8R8A8", "A2B10G10R10", "FloatR11G11B10", "FloatRGB", "FloatRGBA", "A32B32G32R32F" };
+			static int item_current = 4;
+			ImGui::Combo("", &item_current, items, IM_ARRAYSIZE(items));
 
             ImGui::BulletText("Shadow"); ImGui::SameLine(180.0f);
 			static int e = 0;
