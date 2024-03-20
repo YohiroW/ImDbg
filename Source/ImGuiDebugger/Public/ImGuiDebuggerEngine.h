@@ -12,9 +12,12 @@ public:
 
     void Initialize();
 
+	// Engine show flags
+	void InitShowFlags(const TArray<FString>& InShowFlagCommands);
+	void PushShowFlagEntry(FString InConsoleCommand);
+
 private:
-    // Engine show flags
-    void InitShowFlags();
+
     void ShowEngineMenuShowFlags();
     void UpdateShowFlags();
 

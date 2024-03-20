@@ -12,6 +12,8 @@
 
 #include "ImGuiDebuggerManager.generated.h"
 
+#define IDG_WHITELIST TEXT("whitelist")
+
 class FImGuiDebuggerExtension;
 class FImGuiDebuggerEngine;
 class FImGuiDebuggerProfiler;
@@ -39,6 +41,11 @@ public:
 	FVector GetPlayerLocation();
 	void ShowGPUProfiler(bool* bIsOpen);
 
+	void LoadWhitelist(const FString& Whitelist = IDG_WHITELIST);
+	bool IsTracked(const FString& InCommand);
+
+	TArray<FString> GetCommandsByCategory(const FString& InCategory);
+
 private:
 	bool bIsImGuiInitialized = false;
 	bool bIsDebuggerInitialized = false;
@@ -49,4 +56,5 @@ private:
 	FTickerDelegate TickDelegate;
 	FTSTicker::FDelegateHandle TickDelegateHandle;
 
+	TArray<FString> TrackedCommands;
 };

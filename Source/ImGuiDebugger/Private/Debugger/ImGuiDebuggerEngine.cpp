@@ -1,14 +1,9 @@
 #include "ImGuiDebuggerEngine.h"
+#include "ImGuiDebuggerManager.h"
 #include "Kismet/GameplayStatics.h"
 
-#define PUSH_ENTRY_SHOWFLAG(_CMD_,_DISPLAY_,_ARG_)\
-		{ FImGuiDebugEntry Entry;\
-		Entry.Command = FString(_CMD_);\
-		Entry.DisplayName = FString(_DISPLAY_);\
-		Entry.Section = EDebugSection::Engine;\
-		Entry.bToggled = _ARG_;\
-		Entry.Args = FString("1");\
-		RegisterDebuggerEntry(Entry); }
+#define IDB_ENGINE_CATRGORY          "Engine"
+#define IDB_ENGINE_CATRGORY_SHOWFLAG "ShowFlags"
 
 FImGuiDebuggerEngine::FImGuiDebuggerEngine()
 {
@@ -21,12 +16,28 @@ FImGuiDebuggerEngine::~FImGuiDebuggerEngine()
 
 void FImGuiDebuggerEngine::Initialize()
 {
-    InitShowFlags();
+
+}
+
+void FImGuiDebuggerEngine::PushShowFlagEntry(FString InConsoleCommand)
+{
+	FString Command, CommandDisplayName;
+	int32 Value;
+	ParseConsoleVariable(InConsoleCommand, Command, CommandDisplayName, Value);
+
+	FImGuiDebugEntry Entry;
+	Entry.Command = Command;
+	Entry.DisplayName = CommandDisplayName;
+	Entry.Section = EDebugSection::Engine;
+	Entry.bToggled = Value > 0;
+	Entry.Args = FString::Printf(TEXT("%d"),Value);
+
+	RegisterDebuggerEntry(Entry);
 }
 
 void FImGuiDebuggerEngine::ShowMenu()
 {
-    if (ImGui::BeginMenu("Engine"))
+    if (ImGui::BeginMenu(IDB_ENGINE_CATRGORY))
     {
 		ShowEngineMenuShowFlags();
         ShowEngineMenuRendering();
@@ -37,43 +48,22 @@ void FImGuiDebuggerEngine::ShowMenu()
     }
 }
 
-void FImGuiDebuggerEngine::InitShowFlags()
+void FImGuiDebuggerEngine::InitShowFlags(const TArray<FString>& InShowFlagCommands)
 {
 	//
     // Push some common showflags with engine default config
 	// thus, might have an issue like when the default config changed
 	// the show flag in debugger need trigger twice to activate..
 	// 
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.Bounds", "Bounds", false);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.StaticMeshes", "StaticMesh", true);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.InstancedStaticMeshes", "InstancedStaticMeshes", true);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.InstancedFoliage", "Foliage", true);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.InstancedGrass", "Grass", true);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.HISMCOcclusionBounds", "HISMCOcclusionBounds", false);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.SkeletalMeshes", "SkeletalMesh", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.Bones", "Bone", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.Collision", "Collision", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.CollisionPawn", "CollisionPawn", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.CollisionVisibility", "CollisionVisibility", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.Decals", "Decal", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.DynamicShadows", "Shadow", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.ShadowFrustums", "ShadowFrustums", false);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.MotionBlur", "MotionBlur", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.Lighting", "Lighting", true);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.LightComplexity", "LightComplexity", false);
-	PUSH_ENTRY_SHOWFLAG("ShowFlag.Particles", "Particles", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.Refraction", "Refraction", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.GlobalIllumination", "GI", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.LODColoration", "LOD", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.HLODColoration", "HLOD", false);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.AntiAliasing", "AntiAliasing", true);
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.AmbientOcclusion", "AmbientOcclusion", true); 
-    PUSH_ENTRY_SHOWFLAG("ShowFlag.PostProcessing", "PostProcess", true);
+	for (const FString& ShowFlagCommand: InShowFlagCommands)
+	{
+		PushShowFlagEntry(ShowFlagCommand);
+	}
 }
 
 void FImGuiDebuggerEngine::ShowEngineMenuShowFlags()
 {
-    if (ImGui::BeginMenu("ShowFlags"))
+    if (ImGui::BeginMenu(IDB_ENGINE_CATRGORY_SHOWFLAG))
     {
         for (FImGuiDebugEntry& DebugEntry: Entries)
         {

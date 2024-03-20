@@ -88,7 +88,7 @@ void FImGuiDebuggerStats::RemoveNewFrameDelegate()
 
 void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
 {
-#if STATS
+#if 0
 	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
 	if (!Stats.IsFrameValid(Frame))
 	{
@@ -172,7 +172,7 @@ void FImGuiDebuggerStats::StopCollectPerfData()
 
 void FImGuiDebuggerStats::GetStats()
 {
-#if STATS
+#if 0
 	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
 	int64 LastGameFrame = Stats.GetLatestValidFrame();
 

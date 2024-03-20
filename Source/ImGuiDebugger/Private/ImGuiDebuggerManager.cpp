@@ -3,6 +3,7 @@
 #include "ImGuiDebuggerEngine.h"
 #include "ImGuiDebuggerProfiler.h"
 #include <ImGuiModule.h>
+#include "Misc/FileHelper.h"
 
 #define WITH_IMGUI_DEBUGGER 1
 #if WITH_IMGUI_DEBUGGER
@@ -20,10 +21,13 @@ UImGuiDebuggerManager::UImGuiDebuggerManager(const FObjectInitializer& ObjectIni
 
 void UImGuiDebuggerManager::Initialize()
 {
+	LoadWhitelist();
+
 	TickDelegate = FTickerDelegate::CreateUObject(this, &UImGuiDebuggerManager::Refresh);
 	TickDelegateHandle = FTSTicker::GetCoreTicker().AddTicker(TickDelegate, 0.0f);
 
-	FImGuiDebuggerExtension* EngineExt = new FImGuiDebuggerEngine();
+	FImGuiDebuggerEngine* EngineExt = new FImGuiDebuggerEngine();
+	EngineExt->InitShowFlags(GetCommandsByCategory("ShowFlag"));
 	RegisterDebuggerExtension(EngineExt);
 
 	FImGuiDebuggerStats* StatExt = new FImGuiDebuggerStats();
@@ -334,4 +338,36 @@ void UImGuiDebuggerManager::ShowGPUProfiler(bool* bIsOpen)
 			ImGui::End();
 		}
 	}
+}
+
+void UImGuiDebuggerManager::LoadWhitelist(const FString& Whitelist)
+{	
+	// Load our white list commands
+	const FString PluginContentDir = FPaths::ProjectPluginsDir() / TEXT("ImGuiDebugger/Content/");
+	const FString WhiteListFilePath = PluginContentDir/ Whitelist;
+
+	if (FFileHelper::LoadFileToStringArray(TrackedCommands, *WhiteListFilePath))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ImGuiDebugger whitelist loaded."));
+	}
+}
+
+bool UImGuiDebuggerManager::IsTracked(const FString& InCommand)
+{
+	return TrackedCommands.Contains(InCommand);
+}
+
+TArray<FString> UImGuiDebuggerManager::GetCommandsByCategory(const FString& InCategory)
+{
+	TArray<FString> Commands;
+
+	for (FString Command: TrackedCommands)
+	{
+		if (Command.StartsWith(InCategory))
+		{
+			Commands.Add(Command);
+		}
+	}
+
+	return Commands;
 }

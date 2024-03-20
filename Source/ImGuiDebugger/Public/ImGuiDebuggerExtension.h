@@ -43,6 +43,17 @@ public:
 
     virtual void ShowMenu() override;
 
+	// eg: parse cvar like this 'showflag.staticmeshes 2'
+	// OutCategory: showflag
+	// OutName: staticmeshes
+	// OutValue: 2
+	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, int32& OutValue);
+	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, float& OutValue);
+	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, int32& OutValue);
+	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, float& OutValue);
+
+	TMap<FString, IConsoleVariable*> GetCVarList(const FString& InCategory);
+
 protected:
     // All registered entries
 	TArray<FImGuiDebugEntry> Entries;
