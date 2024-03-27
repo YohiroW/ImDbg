@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "0.1",
-	"FriendlyName": "ImGuiDebugger",
+	"FriendlyName": "ImDbg",
 	"Description": "Utilities for debug and profile using ImGui.",
 	"Category": "Other",
 	"CreatedBy": "Yohiro",
@@ -16,7 +16,7 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "ImGuiDebugger",
+			"Name": "ImDbg",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}

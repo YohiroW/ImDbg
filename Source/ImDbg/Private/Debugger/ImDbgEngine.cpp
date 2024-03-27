@@ -1,6 +1,7 @@
 #include "ImGuiDebuggerEngine.h"
 #include "ImGuiDebuggerManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "HAL/ConsoleManager.h"
 
 #define IDB_ENGINE_CATRGORY          "Engine"
 #define IDB_ENGINE_CATRGORY_SHOWFLAG "ShowFlags"
@@ -21,12 +22,13 @@ void FImGuiDebuggerEngine::Initialize()
 
 void FImGuiDebuggerEngine::PushShowFlagEntry(FString InConsoleCommand)
 {
-	FString Command, CommandDisplayName;
-	int32 Value;
-	ParseConsoleVariable(InConsoleCommand, Command, CommandDisplayName, Value);
+	FString Category, CommandDisplayName;
+	ParseConsoleVariable(InConsoleCommand, Category, CommandDisplayName);
+	IConsoleVariable* ConsoleVariable = IConsoleManager::Get().FindConsoleVariable(*InConsoleCommand);
+	int32 Value = ConsoleVariable? ConsoleVariable->GetInt(): -1;
 
 	FImGuiDebugEntry Entry;
-	Entry.Command = Command;
+	Entry.Command = InConsoleCommand;
 	Entry.DisplayName = CommandDisplayName;
 	Entry.Section = EDebugSection::Engine;
 	Entry.bToggled = Value > 0;
@@ -65,11 +67,11 @@ void FImGuiDebuggerEngine::ShowEngineMenuShowFlags()
 {
     if (ImGui::BeginMenu(IDB_ENGINE_CATRGORY_SHOWFLAG))
     {
-        for (FImGuiDebugEntry& DebugEntry: Entries)
+        for (FImGuiDebugEntry& ShowflagEntry: Entries)
         {
-            if(ImGui::Checkbox(TCHAR_TO_UTF8(*DebugEntry.DisplayName), &(DebugEntry.bToggled)))
+            if(ImGui::Checkbox(TCHAR_TO_UTF8(*ShowflagEntry.DisplayName), &(ShowflagEntry.bToggled)))
             {
-                DebugEntry.Execure();
+				ShowflagEntry.Execure();
             }
         }
         ImGui::EndMenu();

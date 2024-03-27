@@ -51,6 +51,7 @@ public:
 	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, float& OutValue);
 	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, int32& OutValue);
 	void ParseConsoleVariable(FString& InCVarString, FString& OutCommand, float& OutValue);
+	void ParseConsoleVariable(FString& InCVarString, FString& OutCategory, FString& OutCommandDisplayName);
 
 	TMap<FString, IConsoleVariable*> GetCVarList(const FString& InCategory);
 

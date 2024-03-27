@@ -109,6 +109,16 @@ void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FStrin
 	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [name]:%s [value]:%f"), *InCVarString, *OutCommand, OutValue);
 }
 
+void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCategory, FString& OutCommandDisplayName)
+{
+	InCVarString.TrimStartInline();
+	InCVarString.TrimEndInline();
+
+	InCVarString.Split(TEXT("."), &OutCategory, &OutCommandDisplayName);
+
+	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [category]:%s [display]:%s"), *InCVarString, *OutCategory, *OutCommandDisplayName);
+}
+
 TMap<FString, IConsoleVariable*> FImGuiDebuggerExtension::GetCVarList(const FString& InCategory)
 {
 	TMap<FString, IConsoleVariable*> CVarMap;

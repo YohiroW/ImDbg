@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class ImGuiDebugger : ModuleRules
+public class ImDbg : ModuleRules
 {
-	public ImGuiDebugger(ReadOnlyTargetRules Target) : base(Target)
+	public ImDbg(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
