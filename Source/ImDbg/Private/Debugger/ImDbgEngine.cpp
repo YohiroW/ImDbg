@@ -1,33 +1,33 @@
-#include "ImGuiDebuggerEngine.h"
-#include "ImGuiDebuggerManager.h"
+#include "ImDbgEngine.h"
+#include "ImDbgManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/ConsoleManager.h"
 
 #define IDB_ENGINE_CATRGORY          "Engine"
 #define IDB_ENGINE_CATRGORY_SHOWFLAG "ShowFlags"
 
-FImGuiDebuggerEngine::FImGuiDebuggerEngine()
+FImDbgEngine::FImDbgEngine()
 {
     Initialize();
 }
 
-FImGuiDebuggerEngine::~FImGuiDebuggerEngine()
+FImDbgEngine::~FImDbgEngine()
 {
 }
 
-void FImGuiDebuggerEngine::Initialize()
+void FImDbgEngine::Initialize()
 {
 
 }
 
-void FImGuiDebuggerEngine::PushShowFlagEntry(FString InConsoleCommand)
+void FImDbgEngine::PushShowFlagEntry(FString InConsoleCommand)
 {
 	FString Category, CommandDisplayName;
 	ParseConsoleVariable(InConsoleCommand, Category, CommandDisplayName);
 	IConsoleVariable* ConsoleVariable = IConsoleManager::Get().FindConsoleVariable(*InConsoleCommand);
 	int32 Value = ConsoleVariable? ConsoleVariable->GetInt(): -1;
 
-	FImGuiDebugEntry Entry;
+	FImDbgEntry Entry;
 	Entry.Command = InConsoleCommand;
 	Entry.DisplayName = CommandDisplayName;
 	Entry.Section = EDebugSection::Engine;
@@ -37,7 +37,7 @@ void FImGuiDebuggerEngine::PushShowFlagEntry(FString InConsoleCommand)
 	RegisterDebuggerEntry(Entry);
 }
 
-void FImGuiDebuggerEngine::ShowMenu()
+void FImDbgEngine::ShowMenu()
 {
     if (ImGui::BeginMenu(IDB_ENGINE_CATRGORY))
     {
@@ -50,7 +50,7 @@ void FImGuiDebuggerEngine::ShowMenu()
     }
 }
 
-void FImGuiDebuggerEngine::InitShowFlags(const TArray<FString>& InShowFlagCommands)
+void FImDbgEngine::InitShowFlags(const TArray<FString>& InShowFlagCommands)
 {
 	//
     // Push some common showflags with engine default config
@@ -63,11 +63,11 @@ void FImGuiDebuggerEngine::InitShowFlags(const TArray<FString>& InShowFlagComman
 	}
 }
 
-void FImGuiDebuggerEngine::ShowEngineMenuShowFlags()
+void FImDbgEngine::ShowEngineMenuShowFlags()
 {
     if (ImGui::BeginMenu(IDB_ENGINE_CATRGORY_SHOWFLAG))
     {
-        for (FImGuiDebugEntry& ShowflagEntry: Entries)
+        for (FImDbgEntry& ShowflagEntry: Entries)
         {
             if(ImGui::Checkbox(TCHAR_TO_UTF8(*ShowflagEntry.DisplayName), &(ShowflagEntry.bToggled)))
             {
@@ -80,11 +80,11 @@ void FImGuiDebuggerEngine::ShowEngineMenuShowFlags()
     //UpdateShowFlags();
 }
 
-void FImGuiDebuggerEngine::UpdateShowFlags()
+void FImDbgEngine::UpdateShowFlags()
 {
 	if (bRequestRefresh)
 	{
-		for (FImGuiDebugEntry& DebugEntry : Entries)
+		for (FImDbgEntry& DebugEntry : Entries)
 		{
 
 		}
@@ -93,7 +93,7 @@ void FImGuiDebuggerEngine::UpdateShowFlags()
 	}
 }
 
-void FImGuiDebuggerEngine::ShowEngineMenuRendering()
+void FImDbgEngine::ShowEngineMenuRendering()
 {
     if (ImGui::BeginMenu("Rendering"))
     {
@@ -204,7 +204,7 @@ void FImGuiDebuggerEngine::ShowEngineMenuRendering()
     }
 }
 
-void FImGuiDebuggerEngine::ShowEngineMenuAnimation()
+void FImDbgEngine::ShowEngineMenuAnimation()
 {
     if (ImGui::BeginMenu("Animation"))
     {
@@ -213,7 +213,7 @@ void FImGuiDebuggerEngine::ShowEngineMenuAnimation()
     }
 }
 
-void FImGuiDebuggerEngine::ShowEngineMenuPhysics()
+void FImDbgEngine::ShowEngineMenuPhysics()
 {
     if (ImGui::BeginMenu("Physics"))
     {

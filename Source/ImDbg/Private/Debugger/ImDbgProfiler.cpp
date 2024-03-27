@@ -1,7 +1,7 @@
-#include "ImGuiDebuggerProfiler.h"
-#include "ImGuiDebugger.h"
+#include "ImDbgProfiler.h"
+#include "ImDbg.h"
 
-#define LOCTEXT_NAMESPACE "ImGuiDebugger"
+#define LOCTEXT_NAMESPACE "ImDbg"
 
 //
 // The function below is taken from AutomationBlueprintFunctionLibrary.h
@@ -36,17 +36,17 @@ float HelperGetStat(FName StatName)
 }
 #endif
 
-FImGuiDebuggerStats::FImGuiDebuggerStats()
+FImDbgStats::FImDbgStats()
 {
 	AddNewFrameDelegate();
 }
 
-FImGuiDebuggerStats::~FImGuiDebuggerStats()
+FImDbgStats::~FImDbgStats()
 {
 	RemoveNewFrameDelegate();
 }
 
-void FImGuiDebuggerStats::ShowMenu()
+void FImDbgStats::ShowMenu()
 {
 #if STATS
 	if (ImGui::Button("Check", ImVec2(56, 22)))
@@ -64,21 +64,21 @@ void FImGuiDebuggerStats::ShowMenu()
 	if (bIsCollecting)
 	{
 		float RenderingTime = HelperGetStat<EComplexStatField::IncAve>(FName(TEXT("STAT_TotalSceneRenderingTime")));
-		UE_LOG(LogImGuiDebugger, Warning, TEXT("RenderingTime : %f]"), RenderingTime);
+		UE_LOG(LogImDbg, Warning, TEXT("RenderingTime : %f]"), RenderingTime);
 	}
 
 #endif
 }
 
-void FImGuiDebuggerStats::AddNewFrameDelegate()
+void FImDbgStats::AddNewFrameDelegate()
 {
 #if STATS
 	const FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
-	OnNewFrameDelegateHandle = Stats.NewFrameDelegate.AddRaw(this, &FImGuiDebuggerStats::HandleNewFrame);
+	OnNewFrameDelegateHandle = Stats.NewFrameDelegate.AddRaw(this, &FImDbgStats::HandleNewFrame);
 #endif
 }
 
-void FImGuiDebuggerStats::RemoveNewFrameDelegate()
+void FImDbgStats::RemoveNewFrameDelegate()
 {
 #if STATS
 	const FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
@@ -86,7 +86,7 @@ void FImGuiDebuggerStats::RemoveNewFrameDelegate()
 #endif
 }
 
-void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
+void FImDbgStats::HandleNewFrame(int64 Frame)
 {
 #if 0
 	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
@@ -131,11 +131,11 @@ void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
 		{
 		case EStatDataType::ST_int64:
 			IntegerRet = Stat.GetValue_int64();
-			UE_LOG(LogImGuiDebugger, Warning, TEXT("Gather stat [%s : %lld]"), *StatName.ToString(), IntegerRet);
+			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %lld]"), *StatName.ToString(), IntegerRet);
 			break;
 		case EStatDataType::ST_double:
 			DoubleRet = Stat.GetValue_double();
-			UE_LOG(LogImGuiDebugger, Warning, TEXT("Gather stat [%s : %f]"), *StatName.ToString(), DoubleRet);
+			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %f]"), *StatName.ToString(), DoubleRet);
 			break;
 		default:
 			break;
@@ -144,11 +144,11 @@ void FImGuiDebuggerStats::HandleNewFrame(int64 Frame)
 #endif
 }
 
-void FImGuiDebuggerStats::HandleNewFrameGT()
+void FImDbgStats::HandleNewFrameGT()
 {
 }
 
-void FImGuiDebuggerStats::StartCollectPerfData()
+void FImDbgStats::StartCollectPerfData()
 {
 	if (!bIsCollecting)
 	{
@@ -159,7 +159,7 @@ void FImGuiDebuggerStats::StartCollectPerfData()
 	}
 }
 
-void FImGuiDebuggerStats::StopCollectPerfData()
+void FImDbgStats::StopCollectPerfData()
 {
 	if (bIsCollecting)
 	{
@@ -170,7 +170,7 @@ void FImGuiDebuggerStats::StopCollectPerfData()
 	}
 }
 
-void FImGuiDebuggerStats::GetStats()
+void FImDbgStats::GetStats()
 {
 #if 0
 	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
@@ -218,11 +218,11 @@ void FImGuiDebuggerStats::GetStats()
 		{
 		case EStatDataType::ST_int64:
 			IntegerRet = Stat.GetValue_int64();
-			UE_LOG(LogImGuiDebugger, Warning, TEXT("Gather stat [%s : %lld]"), *StatName.ToString(), IntegerRet);
+			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %lld]"), *StatName.ToString(), IntegerRet);
 			break;
 		case EStatDataType::ST_double:
 			DoubleRet = Stat.GetValue_double();
-			UE_LOG(LogImGuiDebugger, Warning, TEXT("Gather stat [%s : %f]"), *StatName.ToString(), DoubleRet);
+			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %f]"), *StatName.ToString(), DoubleRet);
 			break;
 		default:
 			break;
@@ -231,7 +231,7 @@ void FImGuiDebuggerStats::GetStats()
 #endif
 }
 
-FStatsFetchThread::FStatsFetchThread(FImGuiDebuggerStats& InStatsDebugger)
+FStatsFetchThread::FStatsFetchThread(FImDbgStats& InStatsDebugger)
 	:StatsDebugger(InStatsDebugger)
 {
 	
@@ -254,20 +254,20 @@ void FStatsFetchThread::StartThread()
 {
 }
 
-FImGuiDebuggerGPUProfiler::FImGuiDebuggerGPUProfiler()
+FImDbgGPUProfiler::FImDbgGPUProfiler()
 {
 	InitializeStats();
 }
 
-FImGuiDebuggerGPUProfiler::~FImGuiDebuggerGPUProfiler()
+FImDbgGPUProfiler::~FImDbgGPUProfiler()
 {
 }
 
-void FImGuiDebuggerGPUProfiler::ShowMenu()
+void FImDbgGPUProfiler::ShowMenu()
 {
 }
 
-void FImGuiDebuggerGPUProfiler::InitializeStats()
+void FImDbgGPUProfiler::InitializeStats()
 {
 }
 

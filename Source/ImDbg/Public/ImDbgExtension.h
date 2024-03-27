@@ -12,7 +12,7 @@ enum EDebugSection: uint8
 };
 
 // Each imgui debug entry
-struct FImGuiDebugEntry
+struct FImDbgEntry
 {
     EDebugSection Section;
     FString Command;
@@ -20,24 +20,24 @@ struct FImGuiDebugEntry
 	bool bToggled;
     FString DisplayName;
 
-	bool operator== (const FImGuiDebugEntry& Other);
+	bool operator== (const FImDbgEntry& Other);
     void Execure();
 };
 
-class IImGuiDebuggerExtension
+class IImDbgExtension
 {
 public:
     virtual void ShowMenu() = 0;
 };
 
-class FImGuiDebuggerExtension : public IImGuiDebuggerExtension
+class FImDbgExtension : public IImDbgExtension
 {
 public:
-    FImGuiDebuggerExtension();
-    virtual ~FImGuiDebuggerExtension();
+    FImDbgExtension();
+    virtual ~FImDbgExtension();
 
-    virtual void RegisterDebuggerEntry(const FImGuiDebugEntry& Entry);
-    virtual void UnregisterDebuggerEntry(const FImGuiDebugEntry& Entry);
+    virtual void RegisterDebuggerEntry(const FImDbgEntry& Entry);
+    virtual void UnregisterDebuggerEntry(const FImDbgEntry& Entry);
 
     virtual void Release();
 
@@ -57,6 +57,6 @@ public:
 
 protected:
     // All registered entries
-	TArray<FImGuiDebugEntry> Entries;
+	TArray<FImDbgEntry> Entries;
 
 };

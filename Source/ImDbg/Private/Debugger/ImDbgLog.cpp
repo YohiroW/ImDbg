@@ -1,2 +1,2 @@
-#include "ImGuiDebuggerLog.h"
+#include "ImDbgLog.h"
 

@@ -1,19 +1,19 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "ImGuiDebugger.h"
+#include "ImDbg.h"
 
-#define LOCTEXT_NAMESPACE "FImGuiDebuggerModule"
+#define LOCTEXT_NAMESPACE "FImDbgModule"
 
-DEFINE_LOG_CATEGORY(LogImGuiDebugger);
+DEFINE_LOG_CATEGORY(LogImDbg);
 
-void FImGuiDebuggerModule::StartupModule()
+void FImDbgModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 
-	UE_LOG(LogImGuiDebugger, Log, TEXT("FImGuiDebuggerModule is Started."));
+	UE_LOG(LogImDbg, Log, TEXT("FImDbgModule is Started."));
 }
 
-void FImGuiDebuggerModule::ShutdownModule()
+void FImDbgModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -21,4 +21,4 @@ void FImGuiDebuggerModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FImGuiDebuggerModule, ImGuiDebugger)
+IMPLEMENT_MODULE(FImDbgModule, ImDbg)

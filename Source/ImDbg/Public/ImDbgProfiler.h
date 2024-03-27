@@ -3,9 +3,9 @@
 #include "CoreMinimal.h"
 #include "Stats/StatsData.h"
 #include "Stats/Stats2.h"
-#include "ImGuiDebuggerExtension.h"
+#include "ImDbgExtension.h"
 
-class FImGuiDebuggerStats;
+class FImDbgStats;
 
 struct FGroupFilter 
 #if STATS
@@ -31,7 +31,7 @@ struct FGroupFilter
 class FStatsFetchThread : public FRunnable
 {
 public:
-	FStatsFetchThread(FImGuiDebuggerStats& InStatsDebugger);
+	FStatsFetchThread(FImDbgStats& InStatsDebugger);
 	~FStatsFetchThread();
 
 	virtual uint32 Run() override;
@@ -43,16 +43,16 @@ public:
 protected:
 	FRunnableThread* RunnableThread;
 
-	FImGuiDebuggerStats& StatsDebugger;
+	FImDbgStats& StatsDebugger;
 
 	FThreadSafeBool bForceStop;
 };
 
-class FImGuiDebuggerStats : public FImGuiDebuggerExtension
+class FImDbgStats : public FImDbgExtension
 {
 public:
-	FImGuiDebuggerStats();
-	~FImGuiDebuggerStats();
+	FImDbgStats();
+	~FImDbgStats();
 
 	virtual void ShowMenu() override;
 
@@ -72,11 +72,11 @@ private:
 	bool bIsCollecting = false;
 };
 
-class FImGuiDebuggerGPUProfiler : public FImGuiDebuggerExtension
+class FImDbgGPUProfiler : public FImDbgExtension
 {
 public:
-	FImGuiDebuggerGPUProfiler();
-	~FImGuiDebuggerGPUProfiler();
+	FImDbgGPUProfiler();
+	~FImDbgGPUProfiler();
 
 	virtual void ShowMenu() override;
 
@@ -84,6 +84,6 @@ public:
 
 
 private:
-	FImGuiDebuggerStats Stats;
+	FImDbgStats Stats;
 
 };

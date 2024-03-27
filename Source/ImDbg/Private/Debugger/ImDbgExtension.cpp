@@ -1,9 +1,9 @@
-#include "ImGuiDebuggerExtension.h"
-#include "ImGuiDebugger.h"
+#include "ImDbgExtension.h"
+#include "ImDbg.h"
 
 #include "Kismet/GameplayStatics.h"
 
-bool FImGuiDebugEntry::operator== (const FImGuiDebugEntry& Other)
+bool FImDbgEntry::operator== (const FImDbgEntry& Other)
 {
 	return this->Section == Other.Section
 		&& this->Command == Other.Command
@@ -11,7 +11,7 @@ bool FImGuiDebugEntry::operator== (const FImGuiDebugEntry& Other)
 		&& this->DisplayName == Other.DisplayName;
 }
 
-void FImGuiDebugEntry::Execure()
+void FImDbgEntry::Execure()
 {
 	FString Argument = bToggled ? FString("1") : FString("0");
 	FString Cmd = FString::Printf(TEXT("%s %s"), *Command, *Argument);
@@ -19,26 +19,26 @@ void FImGuiDebugEntry::Execure()
 	UKismetSystemLibrary::ExecuteConsoleCommand(GEngine->GetWorld(), Cmd);
 }
 
-FImGuiDebuggerExtension::FImGuiDebuggerExtension()
+FImDbgExtension::FImDbgExtension()
 {
 }
 
-FImGuiDebuggerExtension::~FImGuiDebuggerExtension()
+FImDbgExtension::~FImDbgExtension()
 {
 	Release();
 }
 
-void FImGuiDebuggerExtension::RegisterDebuggerEntry(const FImGuiDebugEntry& Entry)
+void FImDbgExtension::RegisterDebuggerEntry(const FImDbgEntry& Entry)
 {
 	Entries.Add(Entry);
 }
 
-void FImGuiDebuggerExtension::UnregisterDebuggerEntry(const FImGuiDebugEntry& Entry)
+void FImDbgExtension::UnregisterDebuggerEntry(const FImDbgEntry& Entry)
 {
 	Entries.Remove(Entry);
 }
 
-void FImGuiDebuggerExtension::Release()
+void FImDbgExtension::Release()
 {
 	if (Entries.Num() == 0)
 	{
@@ -48,12 +48,12 @@ void FImGuiDebuggerExtension::Release()
 	Entries.Empty();
 }
 
-void FImGuiDebuggerExtension::ShowMenu()
+void FImDbgExtension::ShowMenu()
 {
-	UE_LOG(LogImGuiDebugger, Log, TEXT("To be implemented."));
+	UE_LOG(LogImDbg, Log, TEXT("To be implemented."));
 }
 
-void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, int32& OutValue)
+void FImDbgExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, int32& OutValue)
 {
 	InCVarString.TrimStartInline();
 	InCVarString.TrimEndInline();
@@ -65,10 +65,10 @@ void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FStrin
 	FString Category;
 	InCVarString.Split(TEXT("."), &Category, &OutCommandName);
 
-	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [category]:%s [name]:%s [value]:%d"), *OutCommand, *Category, *OutCommandName, OutValue);
+	UE_LOG(LogImDbg, Log, TEXT("Parsing[%s]: [category]:%s [name]:%s [value]:%d"), *OutCommand, *Category, *OutCommandName, OutValue);
 }
 
-void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, float& OutValue)
+void FImDbgExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, FString& OutCommandName, float& OutValue)
 {
 	InCVarString.TrimStartInline();
 	InCVarString.TrimEndInline();
@@ -80,10 +80,10 @@ void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FStrin
 	FString Category;
 	InCVarString.Split(TEXT("."), &Category, &OutCommandName);
 
-	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [category]:%s [name]:%s [value]:%f"), *OutCommand, *Category, *OutCommandName, OutValue);
+	UE_LOG(LogImDbg, Log, TEXT("Parsing[%s]: [category]:%s [name]:%s [value]:%f"), *OutCommand, *Category, *OutCommandName, OutValue);
 }
 
-void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, int32& OutValue)
+void FImDbgExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, int32& OutValue)
 {
 	InCVarString.TrimStartInline();
 	InCVarString.TrimEndInline();
@@ -93,10 +93,10 @@ void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FStrin
 	InCVarString.Split(TEXT(" "), &OutCommand, &ValueString);
 	OutValue = FCString::Atoi(*ValueString);
 
-	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [name]:%s [value]:%d"), *InCVarString, *OutCommand, OutValue);
+	UE_LOG(LogImDbg, Log, TEXT("Parsing[%s]: [name]:%s [value]:%d"), *InCVarString, *OutCommand, OutValue);
 }
 
-void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, float& OutValue)
+void FImDbgExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCommand, float& OutValue)
 {
 	InCVarString.TrimStartInline();
 	InCVarString.TrimEndInline();
@@ -106,20 +106,20 @@ void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FStrin
 	InCVarString.Split(TEXT(" "), &OutCommand, &ValueString);
 	OutValue = FCString::Atof(*ValueString);
 
-	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [name]:%s [value]:%f"), *InCVarString, *OutCommand, OutValue);
+	UE_LOG(LogImDbg, Log, TEXT("Parsing[%s]: [name]:%s [value]:%f"), *InCVarString, *OutCommand, OutValue);
 }
 
-void FImGuiDebuggerExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCategory, FString& OutCommandDisplayName)
+void FImDbgExtension::ParseConsoleVariable(FString& InCVarString, FString& OutCategory, FString& OutCommandDisplayName)
 {
 	InCVarString.TrimStartInline();
 	InCVarString.TrimEndInline();
 
 	InCVarString.Split(TEXT("."), &OutCategory, &OutCommandDisplayName);
 
-	UE_LOG(LogImGuiDebugger, Log, TEXT("Parsing[%s]: [category]:%s [display]:%s"), *InCVarString, *OutCategory, *OutCommandDisplayName);
+	UE_LOG(LogImDbg, Log, TEXT("Parsing[%s]: [category]:%s [display]:%s"), *InCVarString, *OutCategory, *OutCommandDisplayName);
 }
 
-TMap<FString, IConsoleVariable*> FImGuiDebuggerExtension::GetCVarList(const FString& InCategory)
+TMap<FString, IConsoleVariable*> FImDbgExtension::GetCVarList(const FString& InCategory)
 {
 	TMap<FString, IConsoleVariable*> CVarMap;
 

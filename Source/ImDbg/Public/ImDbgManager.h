@@ -8,30 +8,30 @@
 #include "UObject/ScriptMacros.h"
 #include "UObject/Interface.h"
 #include "Containers/Ticker.h"
-#include "ImGuiDebuggerExtension.h"
+#include "ImDbgExtension.h"
 
-#include "ImGuiDebuggerManager.generated.h"
+#include "ImDbgManager.generated.h"
 
 #define IDG_WHITELIST TEXT("whitelist")
 
-class FImGuiDebuggerExtension;
-class FImGuiDebuggerEngine;
-class FImGuiDebuggerProfiler;
+class FImDbgExtension;
+class FImDbgEngine;
+class FImDbgProfiler;
 
 UCLASS()
-class UImGuiDebuggerManager: public UObject
+class UImDbgManager: public UObject
 {
     GENERATED_UCLASS_BODY()
 
 public:
-	~UImGuiDebuggerManager();
+	~UImDbgManager();
 	void Initialize();
 	void InitializeImGuiStyle();
 
 	bool ExecuteCommand(const UObject* WorldContextObject, const FString& Command);
 
-    void RegisterDebuggerExtension(FImGuiDebuggerExtension* InExtension);
-    void UnregisterDebuggerExtension(FImGuiDebuggerExtension* InExtension);
+    void RegisterDebuggerExtension(FImDbgExtension* InExtension);
+    void UnregisterDebuggerExtension(FImDbgExtension* InExtension);
 
 	bool Refresh(float DeltaTime);
 
@@ -51,7 +51,7 @@ private:
 	bool bIsDebuggerInitialized = false;
 
     // All registered extensions
-    TArray<FImGuiDebuggerExtension*> Extensions;
+    TArray<FImDbgExtension*> Extensions;
 
 	FTickerDelegate TickDelegate;
 	FTSTicker::FDelegateHandle TickDelegateHandle;

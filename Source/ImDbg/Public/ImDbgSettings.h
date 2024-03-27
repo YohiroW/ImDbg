@@ -5,15 +5,15 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/DeveloperSettings.h"
 
-#include "ImGuiDebuggerSettings.generated.h"
+#include "ImDbgSettings.generated.h"
 
-UCLASS(config=Engine, defaultconfig, meta=(DisplayName="ImGuiDebugger"))
-class UImGuiDebuggerSettings : public UDeveloperSettings
+UCLASS(config=Engine, defaultconfig, meta=(DisplayName="ImDbg"))
+class UImDbgSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UImGuiDebuggerSettings(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UImDbgSettings(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	// Key to toggle debugger overlay
 	UPROPERTY(config, EditAnywhere, Category = "Input")
@@ -32,10 +32,10 @@ public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	// END UDeveloperSettings Interface
 
-	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnImGuiDebuggerSettingsChanged, const FName&, const UImGuiDebuggerSettings*);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnImDbgSettingsChanged, const FName&, const UImDbgSettings*);
 	
-	static FOnImGuiDebuggerSettingsChanged& OnSettingsChanged();
+	static FOnImDbgSettingsChanged& OnSettingsChanged();
 
-	static FOnImGuiDebuggerSettingsChanged SettingsChangedDelegate;
+	static FOnImDbgSettingsChanged SettingsChangedDelegate;
 #endif
 };

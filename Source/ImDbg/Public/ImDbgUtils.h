@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 
-class  FImGuiDebuggerUtil
+class  FImDbgUtil
 {
 public:
-	FImGuiDebuggerUtil() = delete;
+	FImDbgUtil() = delete;
 
     static ParseConsoleVariable(const FString& Name, const FString& DefaultValue);
 

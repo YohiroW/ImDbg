@@ -1,25 +1,25 @@
-#include "ImGuiDebuggerSettings.h"
+#include "ImDbgSettings.h"
 
 
-UImGuiDebuggerSettings::UImGuiDebuggerSettings(const FObjectInitializer& ObjectInitializer)
+UImDbgSettings::UImDbgSettings(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
 #if WITH_EDITOR
-UImGuiDebuggerSettings::FOnImGuiDebuggerSettingsChanged UImGuiDebuggerSettings::SettingsChangedDelegate;
+UImDbgSettings::FOnImDbgSettingsChanged UImDbgSettings::SettingsChangedDelegate;
 
-FName UImGuiDebuggerSettings::GetCategoryName() const
+FName UImDbgSettings::GetCategoryName() const
 {
 	return FName("Plugins");
 }
 
-FText UImGuiDebuggerSettings::GetSectionText() const
+FText UImDbgSettings::GetSectionText() const
 {
-	return NSLOCTEXT("ImGuiDebuggerPlugin", "ImGuiDebuggerSextion", "ImGuiDebugger");
+	return NSLOCTEXT("ImDbgPlugin", "ImDbgSextion", "ImDbg");
 }
 
-void UImGuiDebuggerSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void UImDbgSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	if (PropertyChangedEvent.Property)
 	{
@@ -27,7 +27,7 @@ void UImGuiDebuggerSettings::PostEditChangeProperty(FPropertyChangedEvent& Prope
 	}
 }
 
-UImGuiDebuggerSettings::FOnImGuiDebuggerSettingsChanged& UImGuiDebuggerSettings::OnSettingsChanged()
+UImDbgSettings::FOnImDbgSettingsChanged& UImDbgSettings::OnSettingsChanged()
 {
 	return SettingsChangedDelegate;
 }

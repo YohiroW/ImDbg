@@ -5,9 +5,9 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogImGuiDebugger, Verbose, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogImDbg, Verbose, All);
 
-class FImGuiDebuggerModule : public IModuleInterface
+class FImDbgModule : public IModuleInterface
 {
 public:
 

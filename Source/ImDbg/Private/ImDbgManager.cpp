@@ -1,7 +1,7 @@
-#include "ImGuiDebuggerManager.h"
-#include "ImGuiDebuggerExtension.h"
-#include "ImGuiDebuggerEngine.h"
-#include "ImGuiDebuggerProfiler.h"
+#include "ImDbgManager.h"
+#include "ImDbgExtension.h"
+#include "ImDbgEngine.h"
+#include "ImDbgProfiler.h"
 #include <ImGuiModule.h>
 #include "Misc/FileHelper.h"
 
@@ -13,28 +13,28 @@
 
 #define INVALID_BUILD_VERSION "0000"
 
-UImGuiDebuggerManager::UImGuiDebuggerManager(const FObjectInitializer& ObjectInitializer)
+UImDbgManager::UImDbgManager(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
 	this->Initialize();
 }
 
-void UImGuiDebuggerManager::Initialize()
+void UImDbgManager::Initialize()
 {
 	LoadWhitelist();
 
-	TickDelegate = FTickerDelegate::CreateUObject(this, &UImGuiDebuggerManager::Refresh);
+	TickDelegate = FTickerDelegate::CreateUObject(this, &UImDbgManager::Refresh);
 	TickDelegateHandle = FTSTicker::GetCoreTicker().AddTicker(TickDelegate, 0.0f);
 
-	FImGuiDebuggerEngine* EngineExt = new FImGuiDebuggerEngine();
+	FImDbgEngine* EngineExt = new FImDbgEngine();
 	EngineExt->InitShowFlags(GetCommandsByCategory("ShowFlag"));
 	RegisterDebuggerExtension(EngineExt);
 
-	FImGuiDebuggerStats* StatExt = new FImGuiDebuggerStats();
+	FImDbgStats* StatExt = new FImDbgStats();
 	RegisterDebuggerExtension(StatExt);
 }
 
-void UImGuiDebuggerManager::InitializeImGuiStyle()
+void UImDbgManager::InitializeImGuiStyle()
 {
 	ImGuiStyle& Style = ImGui::GetStyle();
 	Style.Colors[ImGuiCol_TitleBg].w = 0.5f;
@@ -42,7 +42,7 @@ void UImGuiDebuggerManager::InitializeImGuiStyle()
 	Style.Colors[ImGuiCol_MenuBarBg].w = 0.65f;
 }
 
-UImGuiDebuggerManager::~UImGuiDebuggerManager()
+UImDbgManager::~UImDbgManager()
 {
 	if (Extensions.Num() == 0)
 	{
@@ -52,7 +52,7 @@ UImGuiDebuggerManager::~UImGuiDebuggerManager()
 	FTSTicker::GetCoreTicker().RemoveTicker(TickDelegateHandle);
 	TickDelegateHandle.Reset();
 
-	for (FImGuiDebuggerExtension* DebugExt: Extensions)
+	for (FImDbgExtension* DebugExt: Extensions)
 	{
 		delete DebugExt;
 		DebugExt = nullptr;
@@ -61,17 +61,17 @@ UImGuiDebuggerManager::~UImGuiDebuggerManager()
 	Extensions.Empty();
 }
 
-void UImGuiDebuggerManager::RegisterDebuggerExtension(FImGuiDebuggerExtension* InExtension)
+void UImDbgManager::RegisterDebuggerExtension(FImDbgExtension* InExtension)
 {
 	Extensions.Add(InExtension);
 }
 
-void UImGuiDebuggerManager::UnregisterDebuggerExtension(FImGuiDebuggerExtension* InExtension)
+void UImDbgManager::UnregisterDebuggerExtension(FImDbgExtension* InExtension)
 {
 	Extensions.Remove(InExtension);
 }
 
-bool UImGuiDebuggerManager::Refresh(float DeltaTime)
+bool UImDbgManager::Refresh(float DeltaTime)
 {
 #if WITH_IMGUI_DEBUGGER && !WITH_EDITOR
 	if (!bIsImGuiInitialized)
@@ -103,7 +103,7 @@ bool UImGuiDebuggerManager::Refresh(float DeltaTime)
 	return true;
 }
 
-void UImGuiDebuggerManager::ShowMainMenu(float DeltaTime)
+void UImDbgManager::ShowMainMenu(float DeltaTime)
 {
 	// Refresh imgui overlay one by one
 	static bool bDrawImGuiDemo = false;
@@ -113,7 +113,7 @@ void UImGuiDebuggerManager::ShowMainMenu(float DeltaTime)
 	{
 		if (FImGuiModule* Module = FModuleManager::GetModulePtr<FImGuiModule>("ImGui"))
 		{
-			for (FImGuiDebuggerExtension* DebugExt : Extensions)
+			for (FImDbgExtension* DebugExt : Extensions)
 			{
 				DebugExt->ShowMenu();
 			}
@@ -173,7 +173,7 @@ void UImGuiDebuggerManager::ShowMainMenu(float DeltaTime)
 	}
 }
 
-void UImGuiDebuggerManager::ShowOverlay()
+void UImDbgManager::ShowOverlay()
 {
 	static int location = 1;
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -218,7 +218,7 @@ void UImGuiDebuggerManager::ShowOverlay()
 
 }
 
-FVector UImGuiDebuggerManager::GetPlayerLocation()
+FVector UImDbgManager::GetPlayerLocation()
 {
 	ULocalPlayer* Player = (GEngine && GWorld) ? GEngine->GetFirstGamePlayer(GWorld) : nullptr;
 	FVector PlayerLoc = FVector::ZeroVector;
@@ -299,7 +299,7 @@ struct RollingBuffer
 	}
 };
 
-void UImGuiDebuggerManager::ShowGPUProfiler(bool* bIsOpen)
+void UImDbgManager::ShowGPUProfiler(bool* bIsOpen)
 {
 	if (bIsOpen)
 	{
@@ -340,24 +340,24 @@ void UImGuiDebuggerManager::ShowGPUProfiler(bool* bIsOpen)
 	}
 }
 
-void UImGuiDebuggerManager::LoadWhitelist(const FString& Whitelist)
+void UImDbgManager::LoadWhitelist(const FString& Whitelist)
 {	
 	// Load our white list commands
-	const FString PluginContentDir = FPaths::ProjectPluginsDir() / TEXT("ImGuiDebugger/Content/");
+	const FString PluginContentDir = FPaths::ProjectPluginsDir() / TEXT("ImDbg/Content/");
 	const FString WhiteListFilePath = PluginContentDir/ Whitelist;
 
 	if (FFileHelper::LoadFileToStringArray(TrackedCommands, *WhiteListFilePath))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ImGuiDebugger whitelist loaded."));
+		UE_LOG(LogTemp, Warning, TEXT("ImDbg whitelist loaded."));
 	}
 }
 
-bool UImGuiDebuggerManager::IsTracked(const FString& InCommand)
+bool UImDbgManager::IsTracked(const FString& InCommand)
 {
 	return TrackedCommands.Contains(InCommand);
 }
 
-TArray<FString> UImGuiDebuggerManager::GetCommandsByCategory(const FString& InCategory)
+TArray<FString> UImDbgManager::GetCommandsByCategory(const FString& InCategory)
 {
 	TArray<FString> Commands;
 

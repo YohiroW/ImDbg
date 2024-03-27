@@ -1,12 +1,12 @@
 #pragma once
 
-#include "ImGuiDebuggerExtension.h"
+#include "ImDbgExtension.h"
 
-class FImGuiDebuggerEngine : public FImGuiDebuggerExtension
+class FImDbgEngine : public FImDbgExtension
 {
 public:
-	FImGuiDebuggerEngine();
-    virtual ~FImGuiDebuggerEngine();
+	FImDbgEngine();
+    virtual ~FImDbgEngine();
 
     virtual void ShowMenu() override;
 
