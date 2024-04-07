@@ -1,5 +1,5 @@
 #include "ImDbgProfiler.h"
-#include "ImDbg.h"
+#include "ImDbgModule.h"
 
 #define LOCTEXT_NAMESPACE "ImDbg"
 

@@ -76,21 +76,11 @@ void FImDbgEngine::ShowEngineMenuShowFlags()
         }
         ImGui::EndMenu();
     }
-
-    //UpdateShowFlags();
 }
 
 void FImDbgEngine::UpdateShowFlags()
 {
-	if (bRequestRefresh)
-	{
-		for (FImDbgEntry& DebugEntry : Entries)
-		{
 
-		}
-
-		bRequestRefresh = false;
-	}
 }
 
 void FImDbgEngine::ShowEngineMenuRendering()

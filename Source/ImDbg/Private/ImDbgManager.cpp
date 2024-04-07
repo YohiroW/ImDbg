@@ -5,36 +5,38 @@
 #include <ImGuiModule.h>
 #include "Misc/FileHelper.h"
 
-#define WITH_IMGUI_DEBUGGER 1
-#if WITH_IMGUI_DEBUGGER
+#define WITH_IMDBG 1
+#if WITH_IMDBG
 #include <imgui.h>
 #include <implot.h>
 #endif
 
 #define INVALID_BUILD_VERSION "0000"
 
-UImDbgManager::UImDbgManager(const FObjectInitializer& ObjectInitializer)
-	:Super(ObjectInitializer)
+FImDbgManager::FImDbgManager()
 {
-	this->Initialize();
 }
 
-void UImDbgManager::Initialize()
+void FImDbgManager::Initialize()
 {
+	if (bIsManagerInitialized)
+	{
+		return;
+	}
+
 	LoadWhitelist();
 
-	TickDelegate = FTickerDelegate::CreateUObject(this, &UImDbgManager::Refresh);
-	TickDelegateHandle = FTSTicker::GetCoreTicker().AddTicker(TickDelegate, 0.0f);
-
-	FImDbgEngine* EngineExt = new FImDbgEngine();
+	TSharedPtr<FImDbgEngine> EngineExt = MakeShared<FImDbgEngine>();
 	EngineExt->InitShowFlags(GetCommandsByCategory("ShowFlag"));
 	RegisterDebuggerExtension(EngineExt);
 
-	FImDbgStats* StatExt = new FImDbgStats();
+	TSharedPtr<FImDbgStats> StatExt = MakeShared<FImDbgStats>();
 	RegisterDebuggerExtension(StatExt);
+
+	bIsManagerInitialized = true;
 }
 
-void UImDbgManager::InitializeImGuiStyle()
+void FImDbgManager::InitializeImGuiStyle()
 {
 	ImGuiStyle& Style = ImGui::GetStyle();
 	Style.Colors[ImGuiCol_TitleBg].w = 0.5f;
@@ -42,43 +44,24 @@ void UImDbgManager::InitializeImGuiStyle()
 	Style.Colors[ImGuiCol_MenuBarBg].w = 0.65f;
 }
 
-UImDbgManager::~UImDbgManager()
+ETickableTickType FImDbgManager::GetTickableTickType() const
 {
-	if (Extensions.Num() == 0)
-	{
-		return;
-	}
-
-	FTSTicker::GetCoreTicker().RemoveTicker(TickDelegateHandle);
-	TickDelegateHandle.Reset();
-
-	for (FImDbgExtension* DebugExt: Extensions)
-	{
-		delete DebugExt;
-		DebugExt = nullptr;
-	}
-
-	Extensions.Empty();
+	return ETickableTickType::Always;
 }
 
-void UImDbgManager::RegisterDebuggerExtension(FImDbgExtension* InExtension)
+bool FImDbgManager::IsAllowedToTick() const
 {
-	Extensions.Add(InExtension);
+	return true;
 }
 
-void UImDbgManager::UnregisterDebuggerExtension(FImDbgExtension* InExtension)
+void FImDbgManager::Tick(float DeltaTime)
 {
-	Extensions.Remove(InExtension);
-}
-
-bool UImDbgManager::Refresh(float DeltaTime)
-{
-#if WITH_IMGUI_DEBUGGER && !WITH_EDITOR
+#if WITH_IMDBG
 	if (!bIsImGuiInitialized)
 	{
 		if (!ImGui::GetCurrentContext())
 		{
-			return false;
+			return;
 		}
 		else
 		{
@@ -98,12 +81,35 @@ bool UImDbgManager::Refresh(float DeltaTime)
 		ShowMainMenu(DeltaTime);
 		ShowOverlay();
 	}
-
 #endif
-	return true;
 }
 
-void UImDbgManager::ShowMainMenu(float DeltaTime)
+TStatId FImDbgManager::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(FImDbgManager, STATGROUP_Tickables);
+}
+
+FImDbgManager::~FImDbgManager()
+{
+	if (Extensions.Num() == 0)
+	{
+		return;
+	}
+
+	Extensions.Empty();
+}
+
+void FImDbgManager::RegisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension)
+{
+	Extensions.Add(InExtension);
+}
+
+void FImDbgManager::UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension)
+{
+	Extensions.Remove(InExtension);
+}
+
+void FImDbgManager::ShowMainMenu(float DeltaTime)
 {
 	// Refresh imgui overlay one by one
 	static bool bDrawImGuiDemo = false;
@@ -113,7 +119,7 @@ void UImDbgManager::ShowMainMenu(float DeltaTime)
 	{
 		if (FImGuiModule* Module = FModuleManager::GetModulePtr<FImGuiModule>("ImGui"))
 		{
-			for (FImDbgExtension* DebugExt : Extensions)
+			for (TSharedPtr<FImDbgExtension> DebugExt : Extensions)
 			{
 				DebugExt->ShowMenu();
 			}
@@ -173,7 +179,7 @@ void UImDbgManager::ShowMainMenu(float DeltaTime)
 	}
 }
 
-void UImDbgManager::ShowOverlay()
+void FImDbgManager::ShowOverlay()
 {
 	static int location = 1;
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -218,7 +224,7 @@ void UImDbgManager::ShowOverlay()
 
 }
 
-FVector UImDbgManager::GetPlayerLocation()
+FVector FImDbgManager::GetPlayerLocation()
 {
 	ULocalPlayer* Player = (GEngine && GWorld) ? GEngine->GetFirstGamePlayer(GWorld) : nullptr;
 	FVector PlayerLoc = FVector::ZeroVector;
@@ -299,7 +305,7 @@ struct RollingBuffer
 	}
 };
 
-void UImDbgManager::ShowGPUProfiler(bool* bIsOpen)
+void FImDbgManager::ShowGPUProfiler(bool* bIsOpen)
 {
 	if (bIsOpen)
 	{
@@ -340,10 +346,10 @@ void UImDbgManager::ShowGPUProfiler(bool* bIsOpen)
 	}
 }
 
-void UImDbgManager::LoadWhitelist(const FString& Whitelist)
+void FImDbgManager::LoadWhitelist(const FString& Whitelist)
 {	
 	// Load our white list commands
-	const FString PluginContentDir = FPaths::ProjectPluginsDir() / TEXT("ImDbg/Content/");
+	const FString PluginContentDir = FPaths::ProjectPluginsDir() / TEXT("UnrealImDbg/Content/");
 	const FString WhiteListFilePath = PluginContentDir/ Whitelist;
 
 	if (FFileHelper::LoadFileToStringArray(TrackedCommands, *WhiteListFilePath))
@@ -352,12 +358,12 @@ void UImDbgManager::LoadWhitelist(const FString& Whitelist)
 	}
 }
 
-bool UImDbgManager::IsTracked(const FString& InCommand)
+bool FImDbgManager::IsTracked(const FString& InCommand)
 {
 	return TrackedCommands.Contains(InCommand);
 }
 
-TArray<FString> UImDbgManager::GetCommandsByCategory(const FString& InCategory)
+TArray<FString> FImDbgManager::GetCommandsByCategory(const FString& InCategory)
 {
 	TArray<FString> Commands;
 

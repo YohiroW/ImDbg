@@ -10,30 +10,34 @@
 #include "Containers/Ticker.h"
 #include "ImDbgExtension.h"
 
-#include "ImDbgManager.generated.h"
-
 #define IDG_WHITELIST TEXT("whitelist")
 
 class FImDbgExtension;
 class FImDbgEngine;
 class FImDbgProfiler;
 
-UCLASS()
-class UImDbgManager: public UObject
+class FImDbgManager: public FTickableGameObject
 {
-    GENERATED_UCLASS_BODY()
-
 public:
-	~UImDbgManager();
+	FImDbgManager();
+	~FImDbgManager();
+
 	void Initialize();
 	void InitializeImGuiStyle();
 
+	// FTickableGameObject implementation Begin
+	virtual UWorld* GetTickableGameObjectWorld() const override { return GWorld; }
+	virtual bool IsTickableInEditor() const override { return true; }
+	virtual ETickableTickType GetTickableTickType() const override;
+	virtual bool IsAllowedToTick() const override;
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override;
+	// FTickableGameObject implementation End
+
 	bool ExecuteCommand(const UObject* WorldContextObject, const FString& Command);
 
-    void RegisterDebuggerExtension(FImDbgExtension* InExtension);
-    void UnregisterDebuggerExtension(FImDbgExtension* InExtension);
-
-	bool Refresh(float DeltaTime);
+    void RegisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
+    void UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
 
 	void ShowMainMenu(float DeltaTime);
 	void ShowOverlay();
@@ -49,12 +53,10 @@ public:
 private:
 	bool bIsImGuiInitialized = false;
 	bool bIsDebuggerInitialized = false;
+	bool bIsManagerInitialized = false;
 
     // All registered extensions
-    TArray<FImDbgExtension*> Extensions;
-
-	FTickerDelegate TickDelegate;
-	FTSTicker::FDelegateHandle TickDelegateHandle;
+    TArray<TSharedPtr<FImDbgExtension>> Extensions;
 
 	TArray<FString> TrackedCommands;
 };

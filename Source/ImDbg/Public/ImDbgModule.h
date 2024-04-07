@@ -7,6 +7,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogImDbg, Verbose, All);
 
+class FImDbgManager;
+
 class FImDbgModule : public IModuleInterface
 {
 public:
@@ -14,4 +16,8 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
+private:
+
+	TSharedPtr<FImDbgManager> ImDbgManager;
 };

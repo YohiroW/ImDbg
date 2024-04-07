@@ -1,5 +1,5 @@
 #include "ImDbgExtension.h"
-#include "ImDbg.h"
+#include "ImDbgModule.h"
 
 #include "Kismet/GameplayStatics.h"
 

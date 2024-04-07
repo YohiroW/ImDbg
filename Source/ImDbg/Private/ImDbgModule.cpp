@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "ImDbg.h"
+#include "ImDbgModule.h"
+#include "ImDbgManager.h"
 
 #define LOCTEXT_NAMESPACE "FImDbgModule"
 
@@ -10,7 +11,8 @@ void FImDbgModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 
-	UE_LOG(LogImDbg, Log, TEXT("FImDbgModule is Started."));
+	ImDbgManager = MakeShared<FImDbgManager>();
+	ImDbgManager->Initialize();
 }
 
 void FImDbgModule::ShutdownModule()
