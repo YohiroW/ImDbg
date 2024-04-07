@@ -13,6 +13,16 @@
 
 #define INVALID_BUILD_VERSION "0000"
 
+static bool GImDbGEnabled = true;
+static FAutoConsoleCommand ImDbGEnabled(
+	TEXT("ImDbg.Enabled"),
+	TEXT("Enable ImDbg overlay."),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		GImDbGEnabled = !GImDbGEnabled;
+	})
+);
+
 FImDbgManager::FImDbgManager()
 {
 }
@@ -27,14 +37,75 @@ void FImDbgManager::Initialize()
 
 	TSharedPtr<FImDbgStats> StatExt = MakeShared<FImDbgStats>();
 	RegisterDebuggerExtension(StatExt);
+
+	TSharedPtr<FImDbgProfiler> ProfilerExt = MakeShared<FImDbgProfiler>();
+	ProfilerExt->Initialize();
+	RegisterDebuggerExtension(ProfilerExt);
 }
 
 void FImDbgManager::InitializeImGuiStyle()
 {
-	ImGuiStyle& Style = ImGui::GetStyle();
-	Style.Colors[ImGuiCol_TitleBg].w = 0.5f;
-	Style.Colors[ImGuiCol_WindowBg].w = 0.65f;
-	Style.Colors[ImGuiCol_MenuBarBg].w = 0.65f;
+	ImGuiStyle* CurrentStyle = &ImGui::GetStyle();
+	ImVec4* Colors = CurrentStyle->Colors;
+
+	// color settings 
+	Colors[ImGuiCol_Text]                  = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	Colors[ImGuiCol_TextDisabled]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	Colors[ImGuiCol_WindowBg]              = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	Colors[ImGuiCol_ChildBg]               = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	Colors[ImGuiCol_PopupBg]               = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
+	Colors[ImGuiCol_Border]                = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+	Colors[ImGuiCol_BorderShadow]          = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	Colors[ImGuiCol_FrameBg]               = ImVec4(0.33f, 0.33f, 0.33f, 1.00f);
+	Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
+	Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+	Colors[ImGuiCol_TitleBg]               = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	Colors[ImGuiCol_TitleBgActive]         = ImVec4(0.33f, 0.33f, 0.33f, 1.00f);
+	Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	Colors[ImGuiCol_MenuBarBg]             = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+	Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+	Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+	Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+	Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+	Colors[ImGuiCol_CheckMark]             = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+	Colors[ImGuiCol_SliderGrab]            = ImVec4(0.80f, 0.80f, 0.80f, 1.00f);
+	Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+	Colors[ImGuiCol_Button]                = ImVec4(0.33f, 0.33f, 0.33f, 1.00f);
+	Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
+	Colors[ImGuiCol_ButtonActive]          = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+	Colors[ImGuiCol_Header]                = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
+	Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.50f, 0.50f, 0.50f, 0.80f);
+	Colors[ImGuiCol_HeaderActive]          = ImVec4(0.67f, 0.67f, 0.67f, 1.00f);
+	Colors[ImGuiCol_Separator]             = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+	Colors[ImGuiCol_SeparatorHovered]      = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
+	Colors[ImGuiCol_SeparatorActive]       = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
+	Colors[ImGuiCol_ResizeGrip]            = ImVec4(0.80f, 0.80f, 0.80f, 1.00f);
+	Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(0.87f, 0.87f, 0.87f, 1.00f);
+	Colors[ImGuiCol_ResizeGripActive]      = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	Colors[ImGuiCol_Tab]                   = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+	Colors[ImGuiCol_TabHovered]            = ImVec4(0.38f, 0.38f, 0.38f, 1.00f);
+	Colors[ImGuiCol_TabActive]             = ImVec4(0.47f, 0.47f, 0.47f, 1.00f);
+	Colors[ImGuiCol_TabUnfocused]          = ImVec4(0.07f, 0.10f, 0.15f, 0.97f);
+	Colors[ImGuiCol_TabUnfocusedActive]    = ImVec4(0.14f, 0.26f, 0.42f, 1.00f);
+	Colors[ImGuiCol_PlotLines]             = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+	Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	Colors[ImGuiCol_PlotHistogram]         = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+	Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+	Colors[ImGuiCol_DragDropTarget]        = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+	Colors[ImGuiCol_NavHighlight]          = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+	Colors[ImGuiCol_NavWindowingDimBg]     = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+	Colors[ImGuiCol_ModalWindowDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+	Colors[ImGuiCol_TabUnfocused]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	Colors[ImGuiCol_TabUnfocusedActive]    = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+
+	// other settings
+	CurrentStyle->ChildRounding = 0;
+	CurrentStyle->FrameRounding = 0;
+	CurrentStyle->PopupRounding = 0;
+	CurrentStyle->ScrollbarRounding = 0;
+	CurrentStyle->WindowRounding = 0;
 }
 
 ETickableTickType FImDbgManager::GetTickableTickType() const
@@ -44,7 +115,7 @@ ETickableTickType FImDbgManager::GetTickableTickType() const
 
 bool FImDbgManager::IsAllowedToTick() const
 {
-	return true;
+	return GImDbGEnabled;
 }
 
 void FImDbgManager::Tick(float DeltaTime)
@@ -107,6 +178,7 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 	// Refresh imgui overlay one by one
 	static bool bDrawImGuiDemo = false;
 	static bool bDrawImPlotDemo = false;
+	static bool bDrawMemoryProfiler = false;
 
 	if (ImGui::BeginMainMenuBar())
 	{
@@ -117,17 +189,13 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 				DebugExt->ShowMenu();
 			}
 
-			if (ImGui::BeginMenu("Profile"))
-			{
-				ImGui::Checkbox("GPU Profiler", &bDrawImPlotDemo);
-				ImGui::Checkbox("CPU Profiler", &bDrawImGuiDemo);
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::Button("Report", ImVec2(56, 22)))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("On Report Click..."));
-			}
+			//if (ImGui::BeginMenu("Profile"))
+			//{
+			//	ImGui::Checkbox("GPU Profiler", &bDrawImPlotDemo);
+			//	ImGui::Checkbox("CPU Profiler", &bDrawImGuiDemo);
+			//	ImGui::Checkbox("Memory Profiler", &bDrawMemoryProfiler);
+			//	ImGui::EndMenu();
+			//}
 		}
 
 		if (true)
@@ -169,6 +237,10 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 	{
 		//ImPlot::ShowDemoWindow(&bDrawImPlotDemo);
 		ShowGPUProfiler(&bDrawImPlotDemo);
+	}
+	if (bDrawMemoryProfiler)
+	{
+
 	}
 }
 

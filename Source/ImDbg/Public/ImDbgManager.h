@@ -40,6 +40,8 @@ public:
     void UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
 
 	void ShowMainMenu(float DeltaTime);
+	
+	// Show stats like 'stat unit'
 	void ShowOverlay();
 
 	FVector GetPlayerLocation();

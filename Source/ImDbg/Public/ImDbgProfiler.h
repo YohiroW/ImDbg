@@ -72,6 +72,18 @@ private:
 	bool bIsCollecting = false;
 };
 
+class FImDbgMemoryProfiler : public FImDbgExtension
+{
+public:
+	FImDbgMemoryProfiler(bool* bInEnabled);
+	~FImDbgMemoryProfiler();
+
+	virtual void ShowMenu() override;
+
+private:
+	bool* bEnabled;
+};
+
 class FImDbgGPUProfiler : public FImDbgExtension
 {
 public:
@@ -86,4 +98,22 @@ public:
 private:
 	FImDbgStats Stats;
 
+};
+
+class FImDbgProfiler : public FImDbgExtension
+{
+public:
+	FImDbgProfiler();
+	~FImDbgProfiler();
+
+	void Initialize();
+
+	virtual void ShowMenu() override;
+
+private:
+	bool bShowCPUProfiler = false;
+	bool bShowGPUProfiler = false;
+	bool bShowMemoryProfiler = false;
+
+	TSharedPtr<FImDbgMemoryProfiler> MemoryProfiler;
 };

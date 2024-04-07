@@ -1,7 +1,10 @@
 #include "ImDbgProfiler.h"
 #include "ImDbgModule.h"
+#include "GenericPlatform/GenericPlatformMemory.h"
 
 #define LOCTEXT_NAMESPACE "ImDbg"
+
+#define IDB_PROFILER_CATRGORY "Profiler"
 
 //
 // The function below is taken from AutomationBlueprintFunctionLibrary.h
@@ -49,7 +52,7 @@ FImDbgStats::~FImDbgStats()
 void FImDbgStats::ShowMenu()
 {
 #if STATS
-	if (ImGui::Button("Check", ImVec2(56, 22)))
+	if (ImGui::Button("Stats", ImVec2(56, 22)))
 	{
 		if (!bIsCollecting)
 		{
@@ -254,6 +257,35 @@ void FStatsFetchThread::StartThread()
 {
 }
 
+FImDbgMemoryProfiler::FImDbgMemoryProfiler(bool* bInEnabled)
+{
+	bEnabled = bInEnabled;
+}
+
+FImDbgMemoryProfiler::~FImDbgMemoryProfiler()
+{
+}
+
+void FImDbgMemoryProfiler::ShowMenu()
+{
+	FPlatformMemoryStats Stats = FPlatformMemory::GetStats();
+
+	ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+
+	if (ImGui::Begin("Memory Profiler", bEnabled))
+	{
+		ImGui::Text("Mem       %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.UsedPhysical)));
+		ImGui::Text("MemPeak   %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.PeakUsedPhysical)));
+		ImGui::Text("MemAvail  %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.AvailablePhysical)));
+		ImGui::Text("MemTotal  %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.TotalPhysical)));
+		ImGui::Text("VMem      %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.UsedVirtual)));
+		ImGui::Text("VMemPeak  %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.PeakUsedVirtual)));
+		ImGui::Text("VMemAvail %s", TCHAR_TO_ANSI(*GetMemoryString(Stats.AvailableVirtual)));
+
+		ImGui::End();
+	}
+}
+
 FImDbgGPUProfiler::FImDbgGPUProfiler()
 {
 	InitializeStats();
@@ -269,6 +301,35 @@ void FImDbgGPUProfiler::ShowMenu()
 
 void FImDbgGPUProfiler::InitializeStats()
 {
+}
+
+FImDbgProfiler::FImDbgProfiler()
+{
+}
+
+FImDbgProfiler::~FImDbgProfiler()
+{
+}
+
+void FImDbgProfiler::Initialize()
+{
+	MemoryProfiler = MakeShared<FImDbgMemoryProfiler>(&bShowMemoryProfiler);
+}
+
+void FImDbgProfiler::ShowMenu()
+{
+	if (ImGui::BeginMenu(IDB_PROFILER_CATRGORY))
+	{
+		ImGui::Checkbox("CPU Profiler", &bShowCPUProfiler);
+		ImGui::Checkbox("GPU Profiler", &bShowGPUProfiler);
+		ImGui::Checkbox("Memory Profiler", &bShowMemoryProfiler);
+		ImGui::EndMenu();
+	}
+
+	if (bShowMemoryProfiler && MemoryProfiler)
+	{
+		MemoryProfiler->ShowMenu();
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
