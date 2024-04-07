@@ -19,11 +19,6 @@ FImDbgManager::FImDbgManager()
 
 void FImDbgManager::Initialize()
 {
-	if (bIsManagerInitialized)
-	{
-		return;
-	}
-
 	LoadWhitelist();
 
 	TSharedPtr<FImDbgEngine> EngineExt = MakeShared<FImDbgEngine>();
@@ -32,8 +27,6 @@ void FImDbgManager::Initialize()
 
 	TSharedPtr<FImDbgStats> StatExt = MakeShared<FImDbgStats>();
 	RegisterDebuggerExtension(StatExt);
-
-	bIsManagerInitialized = true;
 }
 
 void FImDbgManager::InitializeImGuiStyle()

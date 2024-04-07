@@ -2,6 +2,7 @@
 #include "ImDbgManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/ConsoleManager.h"
+#include "ShowFlags.h"
 
 #define IDB_ENGINE_CATRGORY          "Engine"
 #define IDB_ENGINE_CATRGORY_SHOWFLAG "ShowFlags"
@@ -24,14 +25,19 @@ void FImDbgEngine::PushShowFlagEntry(FString InConsoleCommand)
 {
 	FString Category, CommandDisplayName;
 	ParseConsoleVariable(InConsoleCommand, Category, CommandDisplayName);
-	IConsoleVariable* ConsoleVariable = IConsoleManager::Get().FindConsoleVariable(*InConsoleCommand);
-	int32 Value = ConsoleVariable? ConsoleVariable->GetInt(): -1;
+	int32 ShowFlagIndex = FEngineShowFlags::FindIndexByName(*CommandDisplayName);
+
+	//FEngineShowFlags EditorShowFlags(ESFIM_Editor);
+	FEngineShowFlags GameShowFlags(ESFIM_Game);
+
+	bool bSet = GameShowFlags.GetSingleFlag(ShowFlagIndex);
+	int32 Value = bSet ? 1 : 0;
 
 	FImDbgEntry Entry;
 	Entry.Command = InConsoleCommand;
 	Entry.DisplayName = CommandDisplayName;
 	Entry.Section = EDebugSection::Engine;
-	Entry.bToggled = Value > 0;
+	Entry.bToggled = bSet;
 	Entry.Args = FString::Printf(TEXT("%d"),Value);
 
 	RegisterDebuggerEntry(Entry);

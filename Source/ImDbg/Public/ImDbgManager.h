@@ -53,7 +53,6 @@ public:
 private:
 	bool bIsImGuiInitialized = false;
 	bool bIsDebuggerInitialized = false;
-	bool bIsManagerInitialized = false;
 
     // All registered extensions
     TArray<TSharedPtr<FImDbgExtension>> Extensions;
