@@ -8,7 +8,6 @@
 #define WITH_IMDBG 1
 #if WITH_IMDBG
 #include <imgui.h>
-#include <implot.h>
 #endif
 
 #define INVALID_BUILD_VERSION "0000"
@@ -51,7 +50,7 @@ void FImDbgManager::InitializeImGuiStyle()
 	// color settings 
 	Colors[ImGuiCol_Text]                  = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 	Colors[ImGuiCol_TextDisabled]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-	Colors[ImGuiCol_WindowBg]              = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	Colors[ImGuiCol_WindowBg]              = ImVec4(0.13f, 0.13f, 0.13f, 0.70f);
 	Colors[ImGuiCol_ChildBg]               = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
 	Colors[ImGuiCol_PopupBg]               = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
 	Colors[ImGuiCol_Border]                = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
@@ -110,12 +109,17 @@ void FImDbgManager::InitializeImGuiStyle()
 
 ETickableTickType FImDbgManager::GetTickableTickType() const
 {
-	return ETickableTickType::Always;
+	return ETickableTickType::Conditional;
 }
 
 bool FImDbgManager::IsAllowedToTick() const
 {
+#if WITH_EDITOR
+	bool bIsPIE = GEditor ? GEditor->IsPlayingSessionInEditor() : false;
+	return GImDbGEnabled && bIsPIE;
+#else
 	return GImDbGEnabled;
+#endif
 }
 
 void FImDbgManager::Tick(float DeltaTime)
@@ -175,10 +179,14 @@ void FImDbgManager::UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InEx
 
 void FImDbgManager::ShowMainMenu(float DeltaTime)
 {
-	// Refresh imgui overlay one by one
-	static bool bDrawImGuiDemo = false;
-	static bool bDrawImPlotDemo = false;
-	static bool bDrawMemoryProfiler = false;
+#if WITH_EDITOR
+	if (GEngine->GameViewport && GEngine->GameViewport->Viewport)
+	{
+		FIntPoint ViewportSize = GEngine->GameViewport->Viewport->GetSizeXY();
+		ImVec2 ImGuiViewportSize(ViewportSize.X, ViewportSize.Y);
+		ImGui::SetNextWindowSize(ImGuiViewportSize);
+	}
+#endif
 
 	if (ImGui::BeginMainMenuBar())
 	{
@@ -188,14 +196,6 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 			{
 				DebugExt->ShowMenu();
 			}
-
-			//if (ImGui::BeginMenu("Profile"))
-			//{
-			//	ImGui::Checkbox("GPU Profiler", &bDrawImPlotDemo);
-			//	ImGui::Checkbox("CPU Profiler", &bDrawImGuiDemo);
-			//	ImGui::Checkbox("Memory Profiler", &bDrawMemoryProfiler);
-			//	ImGui::EndMenu();
-			//}
 		}
 
 		if (true)
@@ -207,9 +207,6 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 			ImGui::SameLine(ImGui::GetWindowWidth() - 260.0f);
 
 			extern ENGINE_API float GAverageFPS;
-			//const float FPS = GAverageFPS;
-			//const float Millis = (1.0f/ FPS) * 1000.0f;
-			//ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%3d FPS %.02f ms", FPS, Millis);
 
 			const int FPS = static_cast<int>(1.0f / DeltaTime);
 			const float Millis = DeltaTime * 1000.0f;
@@ -227,20 +224,6 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 		}
 
 		ImGui::EndMainMenuBar();
-	}
-
-	if (bDrawImGuiDemo)
-	{
-		ImGui::ShowDemoWindow(&bDrawImGuiDemo);
-	}
-	if (bDrawImPlotDemo)
-	{
-		//ImPlot::ShowDemoWindow(&bDrawImPlotDemo);
-		ShowGPUProfiler(&bDrawImPlotDemo);
-	}
-	if (bDrawMemoryProfiler)
-	{
-
 	}
 }
 
@@ -264,29 +247,74 @@ void FImDbgManager::ShowOverlay()
 		window_flags |= ImGuiWindowFlags_NoMove;
 	}
 
-	if (ImGui::Begin("Example: Simple overlay", nullptr, window_flags))
+	UpdateStats();
+
+	if (ImGui::Begin("Unit Stats overlay", nullptr, window_flags))
 	{
-		ImGui::Text("Simple overlay\n" "(right-click to change position)");
-		ImGui::Separator();
-
-		if (ImGui::IsMousePosValid())
-			ImGui::Text("Mouse Position: (%.1f,%.1f)", 1.5f, 2.0f);
-		else
-			ImGui::Text("Mouse Position: <invalid>");
-
-		if (ImGui::BeginPopupContextWindow())
+		if (ImGui::BeginTable("Unit Stats", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
 		{
-			if (ImGui::MenuItem("Custom", NULL, location == -1)) location = -1;
-			if (ImGui::MenuItem("Center", NULL, location == -2)) location = -2;
-			if (ImGui::MenuItem("Top-left", NULL, location == 0)) location = 0;
-			if (ImGui::MenuItem("Top-right", NULL, location == 1)) location = 1;
-			if (ImGui::MenuItem("Bottom-left", NULL, location == 2)) location = 2;
-			if (ImGui::MenuItem("Bottom-right", NULL, location == 3)) location = 3;
-			ImGui::EndPopup();
-		}
-	}
-	ImGui::End();
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Frame");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", FrameTime);
 
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("FPS");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", round(1000 / FrameTime));
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Game");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", GameThreadTime);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Render");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", RenderThreadTime);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("GPU");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", GPUFrameTime);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("RHI");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", RHITTime);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Swap");
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%3.2f", SwapBufferTime);
+
+			//ImGui::TableNextRow();
+			//ImGui::TableSetColumnIndex(0);
+			//ImGui::Text("Input");
+			//ImGui::TableSetColumnIndex(1);
+			//ImGui::Text("%3.2f", InputLatencyTime);
+
+			if (ImGui::BeginPopupContextWindow())
+			{
+				if (ImGui::MenuItem("Custom", NULL, location == -1)) location = -1;
+				if (ImGui::MenuItem("Center", NULL, location == -2)) location = -2;
+				if (ImGui::MenuItem("Top-left", NULL, location == 0)) location = 0;
+				if (ImGui::MenuItem("Top-right", NULL, location == 1)) location = 1;
+				if (ImGui::MenuItem("Bottom-left", NULL, location == 2)) location = 2;
+				if (ImGui::MenuItem("Bottom-right", NULL, location == 3)) location = 3;
+				ImGui::EndPopup();
+			}
+			ImGui::EndTable();
+		}
+		ImGui::End();
+	}
 }
 
 FVector FImDbgManager::GetPlayerLocation()
@@ -307,108 +335,6 @@ FVector FImDbgManager::GetPlayerLocation()
 	}
 
 	return PlayerLoc;
-}
-
-// utility structure for realtime plot
-struct ScrollingBuffer 
-{
-	int MaxSize;
-	int Offset;
-	ImVector<ImVec2> Data;
-
-	ScrollingBuffer(int max_size = 2000) 
-	{
-		MaxSize = max_size;
-		Offset = 0;
-		Data.reserve(MaxSize);
-	}
-
-	void AddPoint(float x, float y) 
-	{
-		if (Data.size() < MaxSize)
-		{
-			Data.push_back(ImVec2(x, y));
-		}
-		else 
-		{
-			Data[Offset] = ImVec2(x, y);
-			Offset = (Offset + 1) % MaxSize;
-		}
-	}
-
-	void Erase() 
-	{
-		if (Data.size() > 0) 
-		{
-			Data.shrink(0);
-			Offset = 0;
-		}
-	}
-};
-
-// utility structure for realtime plot
-struct RollingBuffer 
-{
-	float Span;
-	ImVector<ImVec2> Data;
-
-	RollingBuffer() 
-	{
-		Span = 10.0f;
-		Data.reserve(2000);
-	}
-
-	void AddPoint(float x, float y) 
-	{
-		float xmod = fmodf(x, Span);
-		if (!Data.empty() && xmod < Data.back().x)
-		{
-			Data.shrink(0);
-		}
-
-		Data.push_back(ImVec2(xmod, y));
-	}
-};
-
-void FImDbgManager::ShowGPUProfiler(bool* bIsOpen)
-{
-	if (bIsOpen)
-	{
-		if (ImGui::Begin("GPU Profiler"))
-		{
-			//ImGui::BulletText("Test fps chart..");
-
-			static RollingBuffer rdata1, rdata2;
-			static float t = 0;
-
-			t += ImGui::GetIO().DeltaTime;
-
-			const int FPS = static_cast<int>(1.0f / ImGui::GetIO().DeltaTime);
-			const float Millis = ImGui::GetIO().DeltaTime * 1000.0f;
-
-			rdata1.AddPoint(t, FPS);
-			rdata2.AddPoint(t, Millis);
-
-			static float history = 5.0f;
-			ImGui::SliderFloat("History", &history, 1, 5.0f, "%.1f s");
-			rdata1.Span = history;
-			rdata2.Span = history;
-
-			static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
-
-			if (ImPlot::BeginPlot("##Rolling", ImVec2(0, 150)))
-			{
-				ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
-				ImPlot::SetupAxisLimits(ImAxis_X1, 0, history, ImGuiCond_Always);
-				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 120);
-				ImPlot::PlotLine("FPS", &rdata1.Data[0].x, &rdata1.Data[0].y, rdata1.Data.size(), 0, 0, 2 * sizeof(float));
-				ImPlot::PlotLine("Frame time", &rdata2.Data[0].x, &rdata2.Data[0].y, rdata2.Data.size(), 0, 0, 2 * sizeof(float));
-				ImPlot::EndPlot();
-			}
-
-			ImGui::End();
-		}
-	}
 }
 
 void FImDbgManager::LoadWhitelist(const FString& Whitelist)
@@ -441,4 +367,35 @@ TArray<FString> FImDbgManager::GetCommandsByCategory(const FString& InCategory)
 	}
 
 	return Commands;
+}
+
+void FImDbgManager::UpdateStats()
+{
+	float DiffTime;
+	if (FApp::IsBenchmarking() || FApp::UseFixedTimeStep())
+	{
+		/** If we're in fixed time step mode, FApp::GetCurrentTime() will be incorrect for benchmarking */
+		const double CurrentTime = FPlatformTime::Seconds();
+		if (LastTime == 0)
+		{
+			LastTime = CurrentTime;
+		}
+		DiffTime = CurrentTime - LastTime;
+		LastTime = CurrentTime;
+	}
+	else
+	{
+		/** Use the DiffTime we computed last frame, because it correctly handles the end of frame idling and corresponds better to the other unit times. */
+		DiffTime = FApp::GetCurrentTime() - FApp::GetLastTime();
+	}
+
+	FrameTime = 0.9 * FrameTime + 0.1 * DiffTime * 1000.0f;
+	/** Number of milliseconds the gamethread was used last frame. */
+	GameThreadTime = 0.9 * GameThreadTime + 0.1 * FPlatformTime::ToMilliseconds(GGameThreadTime);
+	/** Number of milliseconds the renderthread was used last frame. */
+	RenderThreadTime = 0.9 * RenderThreadTime + 0.1 * FPlatformTime::ToMilliseconds(GRenderThreadTime);
+	RHITTime = 0.9 * RHITTime + 0.1 * FPlatformTime::ToMilliseconds(GRHIThreadTime);
+	InputLatencyTime = 0.9 * InputLatencyTime + 0.1 * FPlatformTime::ToMilliseconds64(GInputLatencyTime);
+	GPUFrameTime = 0.9 * GPUFrameTime + 0.1 * FPlatformTime::ToMilliseconds(GGPUFrameTime);
+	SwapBufferTime = 0.9 * SwapBufferTime + 0.1 * FPlatformTime::ToMilliseconds(GSwapBufferTime);
 }

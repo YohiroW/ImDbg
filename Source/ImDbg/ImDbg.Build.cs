@@ -8,7 +8,9 @@ public class ImDbg : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		if(Target.Configuration == UnrealTargetConfiguration.Development &&
+		OptimizeCode = CodeOptimization.Never;
+
+		if (Target.Configuration == UnrealTargetConfiguration.Development &&
 		   Target.Type == TargetType.Game)
 		{
             OptimizeCode = CodeOptimization.Never;
@@ -33,6 +35,8 @@ public class ImDbg : ModuleRules
 			{
 				"Core",
 				"Engine",
+				"RenderCore",
+				"RHI",
 				"DeveloperSettings"
 				// ... add other public dependencies that you statically link with here ...
 			}
@@ -58,5 +62,11 @@ public class ImDbg : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+
+
+		if (Target.Type == TargetType.Editor)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 	}
 }

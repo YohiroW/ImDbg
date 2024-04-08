@@ -10,7 +10,15 @@
 #include "Containers/Ticker.h"
 #include "ImDbgExtension.h"
 
+#if WITH_EDITOR
+#include "Editor/EditorEngine.h"
+#endif
+
 #define IDG_WHITELIST TEXT("whitelist")
+
+#if WITH_EDITOR
+extern UNREALED_API UEditorEngine* GEditor;
+#endif
 
 class FImDbgExtension;
 class FImDbgEngine;
@@ -45,12 +53,14 @@ public:
 	void ShowOverlay();
 
 	FVector GetPlayerLocation();
-	void ShowGPUProfiler(bool* bIsOpen);
 
 	void LoadWhitelist(const FString& Whitelist = IDG_WHITELIST);
 	bool IsTracked(const FString& InCommand);
 
 	TArray<FString> GetCommandsByCategory(const FString& InCategory);
+
+	// TODO: try use FStatUnitData to gather stats data
+	void UpdateStats();
 
 private:
 	bool bIsImGuiInitialized = false;
@@ -60,4 +70,15 @@ private:
     TArray<TSharedPtr<FImDbgExtension>> Extensions;
 
 	TArray<FString> TrackedCommands;
+
+	/** Time that has transpired since the last draw call */
+	double LastTime;
+
+	float FrameTime;
+	float GameThreadTime;
+	float RenderThreadTime;
+	float RHITTime;
+	float InputLatencyTime;
+	float GPUFrameTime;
+	float SwapBufferTime;
 };

@@ -7,6 +7,20 @@
 
 class FImDbgStats;
 
+struct FImDbgGeneralStats
+{
+	float FrameTime;
+	float FPS;
+	float GameThreadTime;
+	float RenderThreadTime;
+	//float AudioThreadTime;
+	//float ImGuiThreadTime;
+	float GPUTime;
+	float SwapBufferTime;
+	float RHIThreadTime;
+	float InputLatency;
+};
+
 struct FGroupFilter 
 #if STATS
 	: public IItemFilter
@@ -65,11 +79,22 @@ public:
 	void StartCollectPerfData();
 	void GetStats();
 	void StopCollectPerfData();
+
+	FImDbgGeneralStats GetImDbgStats() { return Stats; }
+	float GetFrameTime()        const { return Stats.FrameTime; }
+	float GetFPS()              const { return Stats.FPS; }
+	float GetGameThreadTime()   const { return Stats.GameThreadTime; }
+	float GetRenderThreadTime() const { return Stats.RenderThreadTime; }
+	float GetGPUTime()          const { return Stats.GPUTime; }
+	float GetSwapBufferTime()   const { return Stats.SwapBufferTime; }
+	float GetRHIThreadTime()    const { return Stats.RHIThreadTime; }
+	float GetInputLatency()     const { return Stats.InputLatency; }
 	
 private:
 	FDelegateHandle OnNewFrameDelegateHandle;
-
 	bool bIsCollecting = false;
+
+	FImDbgGeneralStats Stats;
 };
 
 class FImDbgMemoryProfiler : public FImDbgExtension
@@ -87,7 +112,7 @@ private:
 class FImDbgGPUProfiler : public FImDbgExtension
 {
 public:
-	FImDbgGPUProfiler();
+	FImDbgGPUProfiler(bool* bInEnabled);
 	~FImDbgGPUProfiler();
 
 	virtual void ShowMenu() override;
@@ -97,7 +122,7 @@ public:
 
 private:
 	FImDbgStats Stats;
-
+	bool* bEnabled;
 };
 
 class FImDbgProfiler : public FImDbgExtension
@@ -116,4 +141,6 @@ private:
 	bool bShowMemoryProfiler = false;
 
 	TSharedPtr<FImDbgMemoryProfiler> MemoryProfiler;
+	TSharedPtr<FImDbgGPUProfiler> GPUProfiler;
+
 };
