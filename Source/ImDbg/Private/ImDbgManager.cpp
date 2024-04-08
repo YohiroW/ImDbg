@@ -2,12 +2,15 @@
 #include "ImDbgExtension.h"
 #include "ImDbgEngine.h"
 #include "ImDbgProfiler.h"
-#include <ImGuiModule.h>
 #include "Misc/FileHelper.h"
+
+// From UnrealImGui plugin
+#include <ImGuiModule.h>
 
 #define WITH_IMDBG 1
 #if WITH_IMDBG
 #include <imgui.h>
+#include <imgui_internal.h>
 #endif
 
 #define INVALID_BUILD_VERSION "0000"
@@ -40,10 +43,29 @@ void FImDbgManager::Initialize()
 	TSharedPtr<FImDbgProfiler> ProfilerExt = MakeShared<FImDbgProfiler>();
 	ProfilerExt->Initialize();
 	RegisterDebuggerExtension(ProfilerExt);
+
+	OnViewportResizedHandle = FViewport::ViewportResizedEvent.AddRaw(this, &FImDbgManager::OnViewportResized);
+}
+
+FImDbgManager::~FImDbgManager()
+{
+	FViewport::ViewportResizedEvent.Remove(OnViewportResizedHandle);
+
+	if (Extensions.Num() == 0)
+	{
+		return;
+	}
+
+	Extensions.Empty();
 }
 
 void FImDbgManager::InitializeImGuiStyle()
 {
+	ImGuiIO& IO = GetImGuiIO();
+	FIntPoint Size = GEngine->GameViewport->Viewport->GetSizeXY();
+	IO.DisplaySize = ImVec2(Size.X, Size.Y);
+	IO.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+
 	ImGuiStyle* CurrentStyle = &ImGui::GetStyle();
 	ImVec4* Colors = CurrentStyle->Colors;
 
@@ -134,14 +156,8 @@ void FImDbgManager::Tick(float DeltaTime)
 		else
 		{
 			bIsImGuiInitialized = true;
+			InitializeImGuiStyle();
 		}
-	}
-
-	if (!bIsDebuggerInitialized && bIsImGuiInitialized)
-	{
-		// To see if we can find a callback when ImGui is initialized
-		InitializeImGuiStyle();
-		bIsDebuggerInitialized = true;
 	}
 
 	if (bIsImGuiInitialized)
@@ -157,16 +173,6 @@ TStatId FImDbgManager::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(FImDbgManager, STATGROUP_Tickables);
 }
 
-FImDbgManager::~FImDbgManager()
-{
-	if (Extensions.Num() == 0)
-	{
-		return;
-	}
-
-	Extensions.Empty();
-}
-
 void FImDbgManager::RegisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension)
 {
 	Extensions.Add(InExtension);
@@ -177,17 +183,19 @@ void FImDbgManager::UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InEx
 	Extensions.Remove(InExtension);
 }
 
+void FImDbgManager::OnViewportResized(FViewport* Viewport, uint32 Unused)
+{
+	if (bIsImGuiInitialized)
+	{
+		ImGuiIO& IO = GetImGuiIO();
+		FIntPoint Size = Viewport->GetSizeXY();
+		IO.DisplaySize = ImVec2(Size.X, Size.Y);
+		IO.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	}
+}
+
 void FImDbgManager::ShowMainMenu(float DeltaTime)
 {
-#if WITH_EDITOR
-	if (GEngine->GameViewport && GEngine->GameViewport->Viewport)
-	{
-		FIntPoint ViewportSize = GEngine->GameViewport->Viewport->GetSizeXY();
-		ImVec2 ImGuiViewportSize(ViewportSize.X, ViewportSize.Y);
-		ImGui::SetNextWindowSize(ImGuiViewportSize);
-	}
-#endif
-
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (FImGuiModule* Module = FModuleManager::GetModulePtr<FImGuiModule>("ImGui"))
@@ -398,4 +406,10 @@ void FImDbgManager::UpdateStats()
 	InputLatencyTime = 0.9 * InputLatencyTime + 0.1 * FPlatformTime::ToMilliseconds64(GInputLatencyTime);
 	GPUFrameTime = 0.9 * GPUFrameTime + 0.1 * FPlatformTime::ToMilliseconds(GGPUFrameTime);
 	SwapBufferTime = 0.9 * SwapBufferTime + 0.1 * FPlatformTime::ToMilliseconds(GSwapBufferTime);
+}
+
+ImGuiIO& FImDbgManager::GetImGuiIO() const
+{
+	ImGuiContext* Context = ImGui::GetCurrentContext();
+	return Context->IO;
 }

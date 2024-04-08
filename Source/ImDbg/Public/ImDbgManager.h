@@ -47,6 +47,8 @@ public:
     void RegisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
     void UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
 
+	void OnViewportResized(FViewport* Viewport, uint32 Unused);
+
 	void ShowMainMenu(float DeltaTime);
 	
 	// Show stats like 'stat unit'
@@ -62,9 +64,11 @@ public:
 	// TODO: try use FStatUnitData to gather stats data
 	void UpdateStats();
 
+	// ImGui section
+	ImGuiIO& GetImGuiIO() const;
+
 private:
 	bool bIsImGuiInitialized = false;
-	bool bIsDebuggerInitialized = false;
 
     // All registered extensions
     TArray<TSharedPtr<FImDbgExtension>> Extensions;
@@ -74,11 +78,13 @@ private:
 	/** Time that has transpired since the last draw call */
 	double LastTime;
 
-	float FrameTime;
-	float GameThreadTime;
-	float RenderThreadTime;
-	float RHITTime;
-	float InputLatencyTime;
-	float GPUFrameTime;
-	float SwapBufferTime;
+	float FrameTime = 0.0f;
+	float GameThreadTime = 0.0f;
+	float RenderThreadTime = 0.0f;
+	float RHITTime = 0.0f;
+	float InputLatencyTime = 0.0f;
+	float GPUFrameTime = 0.0f;
+	float SwapBufferTime = 0.0f;
+
+	FDelegateHandle OnViewportResizedHandle;
 };
