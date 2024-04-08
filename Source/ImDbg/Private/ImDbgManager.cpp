@@ -261,47 +261,39 @@ void FImDbgManager::ShowOverlay()
 	{
 		if (ImGui::BeginTable("Unit Stats", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
 		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("Frame");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", FrameTime);
+			ImGui::TableNextColumn(); ImGui::Text("Frame");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", FrameTime);
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("FPS");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", round(1000 / FrameTime));
+			ImGui::TableNextColumn(); ImGui::Text("FPS");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", round(1000 / FrameTime));
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("Game");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", GameThreadTime);
+			ImGui::TableNextColumn(); ImGui::Text("Game");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", GameThreadTime);
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("Render");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", RenderThreadTime);
+			ImGui::TableNextColumn(); ImGui::Text("Render");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", RenderThreadTime);
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("GPU");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", GPUFrameTime);
+			ImGui::TableNextColumn(); ImGui::Text("GPU");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", GPUFrameTime);
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("RHI");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", RHITTime);
+			ImGui::TableNextColumn(); ImGui::Text("RHI");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", RHITTime);
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("Swap");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%3.2f", SwapBufferTime);
+			ImGui::TableNextColumn(); ImGui::Text("Swap");
+			ImGui::TableNextColumn(); ImGui::Text("%3.2f", SwapBufferTime);
+
+			ImGui::TableNextColumn(); ImGui::Text("Draws");
+			ImGui::TableNextColumn(); ImGui::Text("%d", GNumDrawCallsRHI[0]);
+
+			ImGui::TableNextColumn(); ImGui::Text("Prims");
+			if (GNumPrimitivesDrawnRHI[0] < 10000) 
+			{
+				ImGui::TableNextColumn(); ImGui::Text("%i", GNumPrimitivesDrawnRHI[0]);
+			}
+			else 
+			{
+				ImGui::TableNextColumn(); ImGui::Text("%.1f K", GNumPrimitivesDrawnRHI[0] / 1000.f);
+			}
 
 			//ImGui::TableNextRow();
 			//ImGui::TableSetColumnIndex(0);

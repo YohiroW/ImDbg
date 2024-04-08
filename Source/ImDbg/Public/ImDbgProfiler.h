@@ -112,17 +112,36 @@ private:
 class FImDbgGPUProfiler : public FImDbgExtension
 {
 public:
+	enum EGPUProfilerType
+	{
+		Frame,
+		RenderThread,
+		RHI,
+		GPU,
+		GPUProfiler_Count
+	};
+
+	const char* GPUProfilerTypeText[5] =
+	{
+		"Frame",
+		"RenderThread",
+		"RHI",
+		"GPU",
+		"Invalid"
+	};
+
+public:
 	FImDbgGPUProfiler(bool* bInEnabled);
 	~FImDbgGPUProfiler();
 
 	virtual void ShowMenu() override;
 
-	void InitializeStats();
-
+	void Initialize();
 
 private:
 	FImDbgStats Stats;
 	bool* bEnabled;
+	bool IsGPUProfilerEnabled[GPUProfiler_Count];
 };
 
 class FImDbgProfiler : public FImDbgExtension

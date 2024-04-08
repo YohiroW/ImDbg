@@ -281,62 +281,38 @@ void FImDbgMemoryProfiler::ShowMenu()
 {
 	FPlatformMemoryStats Stats = FPlatformMemory::GetStats();
 
-
-
 	if (ImGui::Begin("Memory Profiler", bEnabled))
 	{
 		if (ImGui::BeginTable("Memory Stats", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
 		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("Mem");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.UsedPhysical)));
+			ImGui::TableNextColumn(); ImGui::Text("Mem");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.UsedPhysical)));
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("MemPeak");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.PeakUsedPhysical)));
+			ImGui::TableNextColumn(); ImGui::Text("MemPeak");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.PeakUsedPhysical)));
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("MemAvailable");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.AvailablePhysical)));
+			ImGui::TableNextColumn(); ImGui::Text("MemAvailable");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.AvailablePhysical)));
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("MemTotal");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.TotalPhysical)));
+			ImGui::TableNextColumn(); ImGui::Text("MemTotal");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.TotalPhysical)));
 
 			ImGui::EndTable();
 		}
 
 		if (ImGui::BeginTable("Virtual Memory Stats", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
 		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("VMem");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.UsedVirtual)));
+			ImGui::TableNextColumn(); ImGui::Text("VMem");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.UsedVirtual)));
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("VMemPeak");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.PeakUsedVirtual)));
+			ImGui::TableNextColumn(); ImGui::Text("VMemPeak");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.PeakUsedVirtual)));
 
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("VMemAvaliable");
-			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.AvailableVirtual)));
+			ImGui::TableNextColumn(); ImGui::Text("VMemAvaliable");
+			ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*GetMemoryString(Stats.AvailableVirtual)));
 
 			ImGui::EndTable();
 		}
-
 		ImGui::End();
 	}
 }
@@ -415,52 +391,81 @@ void FImDbgGPUProfiler::ShowMenu()
 {
 	if (ImGui::Begin("GPU Profiler", bEnabled))
 	{
-		// FPS/ frame time
-		static RollingBuffer rdata1, rdata2;
+		static RollingBuffer FrameTimeData, RTTimeData, GPUTimeData, RHITTimeData;
+		static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+		static float History = 10.0f;
+		static float UpLimit = 33.0f;
+
 		static float t = 0;
-
-		static RollingBuffer GPUTimeData, RenderThreadTimeData;
-
 		t += ImGui::GetIO().DeltaTime;
 
-		const int FPS = static_cast<int>(1.0f / ImGui::GetIO().DeltaTime);
 		const float Millis = ImGui::GetIO().DeltaTime * 1000.0f;
 
-		rdata1.AddPoint(t, FPS);
-		rdata2.AddPoint(t, Millis);
-		GPUTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
-		RenderThreadTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
+		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::Frame], &IsGPUProfilerEnabled[EGPUProfilerType::Frame]); ImGui::SameLine();
+		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::RenderThread], &IsGPUProfilerEnabled[EGPUProfilerType::RenderThread]); ImGui::SameLine();
+		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::GPU], &IsGPUProfilerEnabled[EGPUProfilerType::GPU]); ImGui::SameLine();
+		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::RHI], &IsGPUProfilerEnabled[EGPUProfilerType::RHI]);
 
-		static float history = 5.0f;
-		ImGui::SliderFloat("History", &history, 1, 5.0f, "%.1f s");
-		rdata1.Span = history;
-		rdata2.Span = history;
-		GPUTimeData.Span = history;
-		RenderThreadTimeData.Span = history;
+		if (IsGPUProfilerEnabled[EGPUProfilerType::Frame])
+		{
+			FrameTimeData.AddPoint(t, Millis);
+		}
+		if (IsGPUProfilerEnabled[EGPUProfilerType::RenderThread])
+		{
+			RTTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
+		}
+		if (IsGPUProfilerEnabled[EGPUProfilerType::GPU])
+		{
+			GPUTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
+		}
+		if (IsGPUProfilerEnabled[EGPUProfilerType::RHI])
+		{
+			RHITTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
+		}
+		
+		ImGui::SliderFloat("History", &History, 1, 10.0f, "%.1f s");
+		FrameTimeData.Span = History;
+		RTTimeData.Span = History;
+		RHITTimeData.Span = History;
+		GPUTimeData.Span = History;
 
-		static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+		ImGui::SliderFloat("UpLimit", &UpLimit, 1, 33.0f, "%.1f s");
 
-		static float UpLimit = 120.0f;
-		ImGui::SliderFloat("UpLimit", &UpLimit, 1, 200, "%.1f s");
-
-		if (ImPlot::BeginPlot("##Rolling", ImVec2(0, 150)))
+		if (ImPlot::BeginPlot("##Rolling", ImVec2(0, 300)))
 		{
 			ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
-			ImPlot::SetupAxisLimits(ImAxis_X1, 0, history, ImGuiCond_Always);
+			ImPlot::SetupAxisLimits(ImAxis_X1, 0, History, ImGuiCond_Always);
 			ImPlot::SetupAxisLimits(ImAxis_Y1, 0, UpLimit);
-			ImPlot::PlotLine("FPS", &rdata1.Data[0].x, &rdata1.Data[0].y, rdata1.Data.size(), 0, 0, 2 * sizeof(float));
-			ImPlot::PlotLine("Frame time", &rdata2.Data[0].x, &rdata2.Data[0].y, rdata2.Data.size(), 0, 0, 2 * sizeof(float));
-			ImPlot::PlotLine("GPU time", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, 0, 2 * sizeof(float));
-			ImPlot::PlotLine("RenderThread time", &RenderThreadTimeData.Data[0].x, &RenderThreadTimeData.Data[0].y, RenderThreadTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+
+			if (IsGPUProfilerEnabled[EGPUProfilerType::Frame])
+			{
+				ImPlot::PlotLine("Frame", &FrameTimeData.Data[0].x, &FrameTimeData.Data[0].y, FrameTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+			}
+			if (IsGPUProfilerEnabled[EGPUProfilerType::RenderThread])
+			{
+				ImPlot::PlotLine("Render", &RTTimeData.Data[0].x, &RTTimeData.Data[0].y, RTTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+			}
+			if (IsGPUProfilerEnabled[EGPUProfilerType::GPU])
+			{
+				ImPlot::PlotLine("GPU", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+			}
+			if (IsGPUProfilerEnabled[EGPUProfilerType::RHI])
+			{
+				ImPlot::PlotLine("RHI", &RHITTimeData.Data[0].x, &RHITTimeData.Data[0].y, RHITTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+			}
+
 			ImPlot::EndPlot();
 		}
-
 		ImGui::End();
 	}
 }
 
-void FImDbgGPUProfiler::InitializeStats()
+void FImDbgGPUProfiler::Initialize()
 {
+	for (int32 i = 0; i< EGPUProfilerType::GPUProfiler_Count; ++i)
+	{
+		IsGPUProfilerEnabled[i] = false;
+	}
 }
 
 FImDbgProfiler::FImDbgProfiler()
