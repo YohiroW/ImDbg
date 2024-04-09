@@ -100,13 +100,35 @@ private:
 class FImDbgMemoryProfiler : public FImDbgExtension
 {
 public:
+	struct FTextureViewInfo
+	{
+		FString TextureName;
+		FVector2D Dimension;
+		float InMemSize;
+		EPixelFormat PixelFormat;
+		int32 GroupIndex;
+		bool bIsStreaming;
+		bool bIsVirtual;
+		int32 UsageCount;
+	};
+
+public:
 	FImDbgMemoryProfiler(bool* bInEnabled);
 	~FImDbgMemoryProfiler();
 
 	virtual void ShowMenu() override;
+	void ShowGeneralStatsView();
+	void ShowTextureMemoryView();
+	void ShowUObjectMermoryView();
+	void ShowRenderTargetMemoryView();
+
+	void UpdateTextureViewInfos();
 
 private:
 	bool* bEnabled;
+
+	bool bRequestUpdateTextureInfo = true;
+	TArray<TSharedPtr<FTextureViewInfo>> TextureViewInfoList;
 };
 
 class FImDbgGPUProfiler : public FImDbgExtension
