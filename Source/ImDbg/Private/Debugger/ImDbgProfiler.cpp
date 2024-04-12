@@ -6,6 +6,7 @@
 #include "Engine/TextureLODSettings.h"
 #include "GenericPlatform/GenericPlatformMemory.h"
 #include "Stats/StatsData.h"
+#include <imgui_internal.h>
 #include <implot.h>
 
 #define LOCTEXT_NAMESPACE "ImDbg"
@@ -306,12 +307,6 @@ void FImDbgMemoryProfiler::ShowMenu()
 
 		ImGui::Separator();
 
-		if (ImGui::Button("Update"))
-		{
-			TextureViewInfoList.Empty();
-			bRequestUpdateTextureInfo = true;
-		}
-
 		if (ImGui::BeginTabBar("MemoryDetail", ImGuiTabBarFlags_None))
 		{
 			if (ImGui::BeginTabItem("General"))
@@ -339,6 +334,12 @@ void FImDbgMemoryProfiler::ShowMenu()
 			{
 				ShowRenderTargetMemoryView();
 				ImGui::EndTabItem();
+			}
+			ImGui::SameLine(ImGui::GetWindowWidth() - 2 * ImGui::CalcTextSize("Update").x);
+			if (ImGui::Button("Update"))
+			{
+				TextureViewInfoList.Empty();
+				bRequestUpdateTextureInfo = true;
 			}
 			ImGui::EndTabBar();
 		}
@@ -731,8 +732,33 @@ void FImDbgProfiler::ShowMenu()
 {
 	if (ImGui::BeginMenu(IDB_PROFILER_CATRGORY))
 	{
-		ImGui::Checkbox("CPU Profiler", &bShowCPUProfiler);
-		ImGui::Checkbox("GPU Profiler", &bShowGPUProfiler);
+		ImGui::SeparatorText("Trace");
+
+		if (ImGui::Button("Start Trace"))
+		{
+
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Stop Trace"))
+		{
+
+		}
+		ImGui::SameLine();
+		if (ImGui::BeginMenu("Trace Channel"))
+		{
+			for (int32 i = 0; i < EImDbgTraceChannel::Num; i++)
+			{
+				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+				ImGui::MenuItem(ImDbgTraceChannelName[i], "", &TraceChannels[i]);
+				ImGui::PopItemFlag();
+			}
+			ImGui::EndMenu();
+		}
+
+		ImGui::SeparatorText("Profiler");
+
+		ImGui::Checkbox("CPU Profiler", &bShowCPUProfiler); ImGui::SameLine();
+		ImGui::Checkbox("GPU Profiler", &bShowGPUProfiler); ImGui::SameLine();
 		ImGui::Checkbox("Memory Profiler", &bShowMemoryProfiler);
 		ImGui::EndMenu();
 	}

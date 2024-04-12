@@ -168,6 +168,27 @@ private:
 
 class FImDbgProfiler : public FImDbgExtension
 {
+public:	
+	enum EImDbgTraceChannel
+	{
+		CPU,
+		Frame,
+		GPU,
+		LoadTime,
+		AssetLoadTime,
+		Stats,
+		Task,
+		RDG,
+		RHICommand,
+		RenderCommands,
+		Num
+	};
+
+	  const char* ImDbgTraceChannelName[EImDbgTraceChannel::Num] =
+	  {
+		  "CPU", "Frame", "GPU", "LoadTime", "AssetLoadTime", "Stats", "Task", "RDG", "RHICommand", "RenderCommands"
+	  };
+
 public:
 	FImDbgProfiler();
 	~FImDbgProfiler();
@@ -181,7 +202,8 @@ private:
 	bool bShowGPUProfiler = false;
 	bool bShowMemoryProfiler = false;
 
+	bool TraceChannels[EImDbgTraceChannel::Num];
+
 	TSharedPtr<FImDbgMemoryProfiler> MemoryProfiler;
 	TSharedPtr<FImDbgGPUProfiler> GPUProfiler;
-
 };
