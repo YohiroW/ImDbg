@@ -19,6 +19,10 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "Input")
 	FKey OverlayToggleKey;
 
+	// Showflags to be tracked
+	UPROPERTY(config, EditAnywhere, Category = "Commands | Showflag")
+	TArray<FString> TrackedShowflags;
+
 	// Section for QA, can be jira or issue page
 	UPROPERTY(Config, EditAnywhere, Category = "QA")
 	FString IssuePage = FString("blog.yohiro.cn");

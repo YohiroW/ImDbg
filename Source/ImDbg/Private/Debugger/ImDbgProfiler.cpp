@@ -286,25 +286,47 @@ void FImDbgMemoryProfiler::ShowMenu()
 {
 	if (ImGui::Begin("MemoryProfiler", bEnabled))
 	{
-		ShowGeneralStatsView();
+		FPlatformMemoryStats Stats = FPlatformMemory::GetStats();
+		const float PhysicalMemoryUsage = (float)Stats.UsedPhysical / (float)Stats.TotalPhysical;
+		const float VirtualMemoryUsage = (float)Stats.UsedVirtual / (float)Stats.TotalVirtual;
+
+		ImGui::Text("Physical Memory:");
+		ImGui::SameLine();
+		{
+			const FString& ProgStr = FString::Printf(TEXT("%.02f MB / %.02f MB (%.02f%%)"), ToMegaByte(Stats.UsedPhysical), ToMegaByte(Stats.TotalPhysical), PhysicalMemoryUsage * 100.0f);
+			ImGui::ProgressBar(PhysicalMemoryUsage, ImVec2(-1, 0), TCHAR_TO_ANSI(*ProgStr));
+		}
+
+		ImGui::Text("Virtual Memory:");
+		ImGui::SameLine();
+		{
+			const FString& ProgStr = FString::Printf(TEXT("%.02f MB / %.02f MB (%.02f%%)"), ToMegaByte(Stats.UsedVirtual), ToMegaByte(Stats.TotalVirtual), VirtualMemoryUsage * 100.0f);
+			ImGui::ProgressBar(VirtualMemoryUsage, ImVec2(-1, 0), TCHAR_TO_ANSI(*ProgStr));
+		}
 
 		ImGui::Separator();
+
 		if (ImGui::Button("Update"))
 		{
 			TextureViewInfoList.Empty();
 			bRequestUpdateTextureInfo = true;
 		}
 
-		if (bRequestUpdateTextureInfo)
-		{
-			UpdateTextureViewInfos();	
-			bRequestUpdateTextureInfo = false;
-		}
-
 		if (ImGui::BeginTabBar("MemoryDetail", ImGuiTabBarFlags_None))
 		{
+			if (ImGui::BeginTabItem("General"))
+			{
+				ShowGeneralStatsView();
+				ImGui::EndTabItem();
+			}
 			if (ImGui::BeginTabItem("Texture"))
 			{
+				if (bRequestUpdateTextureInfo)
+				{
+					UpdateTextureViewInfos();
+					bRequestUpdateTextureInfo = false;
+				}
+
 				ShowTextureMemoryView();
 				ImGui::EndTabItem();
 			}
@@ -330,20 +352,6 @@ void FImDbgMemoryProfiler::ShowGeneralStatsView()
 	FPlatformMemoryStats Stats = FPlatformMemory::GetStats();
 	const float PhysicalMemoryUsage = (float)Stats.UsedPhysical / (float)Stats.TotalPhysical;
 	const float VirtualMemoryUsage = (float)Stats.UsedVirtual / (float)Stats.TotalVirtual;
-
-	ImGui::Text("Physical Memory:");
-	ImGui::SameLine();
-	{
-		const FString& ProgStr = FString::Printf(TEXT("%.02f MB / %.02f MB (%.02f%%)"), ToMegaByte(Stats.UsedPhysical), ToMegaByte(Stats.TotalPhysical), PhysicalMemoryUsage * 100.0f);
-		ImGui::ProgressBar(PhysicalMemoryUsage, ImVec2(-1, 0), TCHAR_TO_ANSI(*ProgStr));
-	}
-
-	ImGui::Text("Virtual Memory:");
-	ImGui::SameLine();
-	{
-		const FString& ProgStr = FString::Printf(TEXT("%.02f MB / %.02f MB (%.02f%%)"), ToMegaByte(Stats.UsedVirtual), ToMegaByte(Stats.TotalVirtual), VirtualMemoryUsage * 100.0f);
-		ImGui::ProgressBar(VirtualMemoryUsage, ImVec2(-1, 0), TCHAR_TO_ANSI(*ProgStr));
-	}
 
 	if (ImGui::BeginTable("MemoryStats", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
 	{

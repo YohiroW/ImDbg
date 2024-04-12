@@ -2,6 +2,7 @@
 #include "ImDbgExtension.h"
 #include "ImDbgEngine.h"
 #include "ImDbgProfiler.h"
+#include "ImDbgLogViewer.h"
 #include "Misc/FileHelper.h"
 
 // From UnrealImGui plugin
@@ -43,6 +44,9 @@ void FImDbgManager::Initialize()
 	TSharedPtr<FImDbgProfiler> ProfilerExt = MakeShared<FImDbgProfiler>();
 	ProfilerExt->Initialize();
 	RegisterDebuggerExtension(ProfilerExt);
+
+	TSharedPtr<FImDbgLogViewer> LogExt = MakeShared<FImDbgLogViewer>();
+	RegisterDebuggerExtension(LogExt);
 
 	OnViewportResizedHandle = FViewport::ViewportResizedEvent.AddRaw(this, &FImDbgManager::OnViewportResized);
 }
