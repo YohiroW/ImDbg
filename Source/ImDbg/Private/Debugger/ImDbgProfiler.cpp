@@ -321,8 +321,9 @@ void FImDbgMemoryProfiler::ShowMenu()
 					UpdateTextureViewInfos();
 					bRequestUpdateTextureInfo = false;
 				}
-
+				ImGui::BeginChild("TabContent");
 				ShowTextureMemoryView();
+				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem("UObject"))
@@ -343,7 +344,6 @@ void FImDbgMemoryProfiler::ShowMenu()
 			}
 			ImGui::EndTabBar();
 		}
-		
 		ImGui::End();
 	}
 }

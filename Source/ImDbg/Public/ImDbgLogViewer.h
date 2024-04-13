@@ -3,11 +3,15 @@
 #include "CoreMinimal.h"
 #include "ImDbgExtension.h"
 
-class FImDbgLogViewer : public FImDbgExtension
+class FImDbgLogViewer : public FImDbgExtension, public FOutputDevice
 {
 public:
 	FImDbgLogViewer();
-	virtual ~FImDbgLogViewer();
+	~FImDbgLogViewer();
+
+	// Begin FOutputDevice interface
+	virtual void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const class FName& Category) override;
+	// End FOutputDevice interface
 
 	virtual void ShowMenu() override;
 
