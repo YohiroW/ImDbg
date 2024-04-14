@@ -3,18 +3,55 @@
 
 FImDbgLogViewer::FImDbgLogViewer()
 {
+	GLog->AddOutputDevice(this);
 }
 
 FImDbgLogViewer::~FImDbgLogViewer()
 {
+	GLog->RemoveOutputDevice(this);
 }
 
 void FImDbgLogViewer::Initialize()
 {
+	
+}
+
+void FImDbgLogViewer::Clear()
+{
+	Items.clear();
+}
+
+ImColor FImDbgLogViewer::GetVerbosityColor(const ELogVerbosity::Type Verbosity) const
+{
+	switch (Verbosity)
+	{
+	case ELogVerbosity::Fatal:	      return ImColor(1.0f, 0.0f, 0.5f);
+	case ELogVerbosity::Error:        return ImColor(1.0f, 0.0f, 0.0f);
+	case ELogVerbosity::Warning:      return ImColor(1.0f, 1.0f, 0.0f);
+	case ELogVerbosity::Display:      return ImColor(0.5f, 1.0f, 0.5f);
+	case ELogVerbosity::Log:	      return ImColor(1.0f, 1.0f, 1.0f);
+	case ELogVerbosity::Verbose:      return ImColor(1.0f, 1.0f, 1.0f);
+	case ELogVerbosity::VeryVerbose:  return ImColor(1.0f, 1.0f, 1.0f);
+	default: 
+		return ImColor(1.0f, 1.0f, 1.0f);
+	}
 }
 
 void FImDbgLogViewer::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
 {
+	//if (bEnabled)
+	{
+		const char* CategoryName = TCHAR_TO_ANSI(*Category.ToString());
+		char* Msg = TCHAR_TO_ANSI(Message);
+
+		if (!CategoryChannel.Contains(CategoryName))
+		{
+			const int32 CategoryLen = strlen(CategoryName);
+			CategoryChannel.Add(CategoryName, true);
+		}
+
+		Items.push_back(LogItem(Verbosity, CategoryName, Msg));
+	}
 }
 
 void FImDbgLogViewer::ShowMenu()
@@ -64,7 +101,7 @@ void FImDbgLogViewer::ShowMenu()
 			ImGui::SameLine();
 			if (ImGui::Button("Clear"))
 			{
-				
+				Clear();
 			}
 			ImGui::Separator();
 			// Log content
@@ -74,8 +111,11 @@ void FImDbgLogViewer::ShowMenu()
 				ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 100.0f);
 				ImGui::TableSetupColumn("Log", ImGuiTableColumnFlags_DefaultHide);
 
-				ImGui::TableNextColumn(); ImGui::Text("ImDbg");
-				ImGui::TableNextColumn(); ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error...............");
+				for (int i = 0; i < Items.Size; i++)
+				{
+					ImGui::TableNextColumn(); ImGui::Text(Items[i].Category);
+					ImGui::TableNextColumn(); ImGui::TextColored(GetVerbosityColor(Items[i].Verbosity), Items[i].Message);
+				}
 
 				ImGui::EndTable();
 			}
