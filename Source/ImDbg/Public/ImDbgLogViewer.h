@@ -6,6 +6,12 @@
 class FImDbgLogViewer : public FImDbgExtension, public FOutputDevice
 {
 public:
+	const char* LogVerbosityStr[ELogVerbosity::NumVerbosity] =
+	{
+		"NoLogging", "Fatal", "Error", "Warning", "Display", "Log", "Verbose", "VeryVerbose"
+	};
+
+public:
 	FImDbgLogViewer();
 	~FImDbgLogViewer();
 
@@ -19,5 +25,8 @@ public:
 
 private:
 	bool bEnabled = false;
+
+	bool VerbosityChannel[ELogVerbosity::NumVerbosity];
+
 
 };

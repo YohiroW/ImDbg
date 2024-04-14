@@ -41,7 +41,10 @@ void FImDbgLogViewer::ShowMenu()
 			if (ImGui::BeginPopup("Category"))
 			{
 				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
-				ImGui::MenuItem("ImDbg", "", false);
+				for (int32 i = 0; i< ELogVerbosity::NumVerbosity; ++i)
+				{
+					ImGui::MenuItem(LogVerbosityStr[i], "", &VerbosityChannel[i]);
+				}
 				ImGui::PopItemFlag();
 				ImGui::EndPopup();
 			}
@@ -49,7 +52,10 @@ void FImDbgLogViewer::ShowMenu()
 			if (ImGui::BeginPopup("Verbosity"))
 			{
 				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
-				ImGui::MenuItem("Error", "", true);
+				for (int32 i = 0; i < ELogVerbosity::NumVerbosity; ++i)
+				{
+					ImGui::MenuItem(LogVerbosityStr[i], "", &VerbosityChannel[i]);
+				}
 				ImGui::PopItemFlag();
 				ImGui::EndPopup();
 			}
