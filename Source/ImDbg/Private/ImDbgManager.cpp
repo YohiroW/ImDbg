@@ -46,6 +46,7 @@ void FImDbgManager::Initialize()
 	RegisterDebuggerExtension(ProfilerExt);
 
 	TSharedPtr<FImDbgLogViewer> LogExt = MakeShared<FImDbgLogViewer>();
+	LogExt->Initialize();
 	RegisterDebuggerExtension(LogExt);
 
 	OnViewportResizedHandle = FViewport::ViewportResizedEvent.AddRaw(this, &FImDbgManager::OnViewportResized);

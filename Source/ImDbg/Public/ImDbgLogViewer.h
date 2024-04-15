@@ -48,18 +48,19 @@ public:
 	// End FOutputDevice interface
 
 	virtual void ShowMenu() override;
-
+	void ShowMessage();
 	void Initialize();
 	void Clear();
-
-	ImColor GetVerbosityColor(const ELogVerbosity::Type Verbosity) const;
+	bool IsValid(const char* InCategory, const ELogVerbosity::Type InVerbosity) const;
+	void MaskAll(const bool bInLogAll);
+	
+	ImVec4 GetVerbosityColor(const ELogVerbosity::Type Verbosity) const;
 
 private:
 	bool bEnabled = false;
 	bool VerbosityChannel[ELogVerbosity::NumVerbosity];
 	
-	TMap<const char*, bool> CategoryChannel;
+	TMap<FString, bool> CategoryChannels;
 
 	ImVector<LogItem> Items;
-
 };

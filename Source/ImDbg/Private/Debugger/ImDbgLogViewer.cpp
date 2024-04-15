@@ -13,7 +13,20 @@ FImDbgLogViewer::~FImDbgLogViewer()
 
 void FImDbgLogViewer::Initialize()
 {
-	
+	for (int32 i = 0; i< ELogVerbosity::Type::NumVerbosity; ++i)
+	{
+		VerbosityChannel[i] = false;
+	}
+
+	VerbosityChannel[ELogVerbosity::Warning] = true;
+	VerbosityChannel[ELogVerbosity::Error] = true;
+	VerbosityChannel[ELogVerbosity::Display] = true;
+	VerbosityChannel[ELogVerbosity::Log] = true;
+
+	for (auto Pair: CategoryChannels)
+	{
+		Pair.Value = false;
+	}
 }
 
 void FImDbgLogViewer::Clear()
@@ -21,19 +34,37 @@ void FImDbgLogViewer::Clear()
 	Items.clear();
 }
 
-ImColor FImDbgLogViewer::GetVerbosityColor(const ELogVerbosity::Type Verbosity) const
+bool FImDbgLogViewer::IsValid(const char* InCategory, const ELogVerbosity::Type InVerbosity) const
+{
+	FString CategoryStr = FString(InCategory);
+	bool bIsValidCategory = CategoryChannels.Contains(CategoryStr)? CategoryChannels[CategoryStr] : false;
+	
+	bool bIsValidVerbosity = VerbosityChannel[InVerbosity];
+
+	return bIsValidCategory && bIsValidVerbosity;
+}
+
+void FImDbgLogViewer::MaskAll(const bool bInLogAll)
+{
+	for (auto Pair : CategoryChannels)
+	{
+		CategoryChannels[Pair.Key] = bInLogAll;
+	}
+}
+
+ImVec4 FImDbgLogViewer::GetVerbosityColor(const ELogVerbosity::Type Verbosity) const
 {
 	switch (Verbosity)
 	{
-	case ELogVerbosity::Fatal:	      return ImColor(1.0f, 0.0f, 0.5f);
-	case ELogVerbosity::Error:        return ImColor(1.0f, 0.0f, 0.0f);
-	case ELogVerbosity::Warning:      return ImColor(1.0f, 1.0f, 0.0f);
-	case ELogVerbosity::Display:      return ImColor(0.5f, 1.0f, 0.5f);
-	case ELogVerbosity::Log:	      return ImColor(1.0f, 1.0f, 1.0f);
-	case ELogVerbosity::Verbose:      return ImColor(1.0f, 1.0f, 1.0f);
-	case ELogVerbosity::VeryVerbose:  return ImColor(1.0f, 1.0f, 1.0f);
+	case ELogVerbosity::Fatal:	      return ImVec4(1.0f, 0.0f, 0.5f, 1.0f);
+	case ELogVerbosity::Error:        return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+	case ELogVerbosity::Warning:      return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+	case ELogVerbosity::Display:      return ImVec4(0.5f, 1.0f, 0.5f, 1.0f);
+	case ELogVerbosity::Log:	      return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	case ELogVerbosity::Verbose:      return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	case ELogVerbosity::VeryVerbose:  return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	default: 
-		return ImColor(1.0f, 1.0f, 1.0f);
+		return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 }
 
@@ -41,13 +72,13 @@ void FImDbgLogViewer::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbos
 {
 	//if (bEnabled)
 	{
-		const char* CategoryName = TCHAR_TO_ANSI(*Category.ToString());
-		char* Msg = TCHAR_TO_ANSI(Message);
+		FString CategoryStr = Category.ToString();
+		const char* CategoryName = Strdup(TCHAR_TO_ANSI(*Category.ToString()));
+		char* Msg = Strdup(TCHAR_TO_ANSI(Message));
 
-		if (!CategoryChannel.Contains(CategoryName))
+		if (!CategoryChannels.Contains(CategoryStr))
 		{
-			const int32 CategoryLen = strlen(CategoryName);
-			CategoryChannel.Add(CategoryName, true);
+			CategoryChannels.Add(CategoryStr, true);
 		}
 
 		Items.push_back(LogItem(Verbosity, CategoryName, Msg));
@@ -78,9 +109,12 @@ void FImDbgLogViewer::ShowMenu()
 			if (ImGui::BeginPopup("Category"))
 			{
 				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
-				for (int32 i = 0; i< ELogVerbosity::NumVerbosity; ++i)
+				if (ImGui::Button("Log All"))	   MaskAll(true);
+				ImGui::SameLine();
+				if (ImGui::Button("Mute All"))   MaskAll(false);
+				for (auto Pair: CategoryChannels)
 				{
-					ImGui::MenuItem(LogVerbosityStr[i], "", &VerbosityChannel[i]);
+					ImGui::MenuItem(TCHAR_TO_ANSI(*Pair.Key), "", &CategoryChannels[Pair.Key]);
 				}
 				ImGui::PopItemFlag();
 				ImGui::EndPopup();
@@ -104,6 +138,7 @@ void FImDbgLogViewer::ShowMenu()
 				Clear();
 			}
 			ImGui::Separator();
+
 			// Log content
 			ImGui::BeginChild("LogContent");
 			if (ImGui::BeginTable("LogTable", 2, ImGuiTableFlags_Borders))
@@ -111,11 +146,7 @@ void FImDbgLogViewer::ShowMenu()
 				ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 100.0f);
 				ImGui::TableSetupColumn("Log", ImGuiTableColumnFlags_DefaultHide);
 
-				for (int i = 0; i < Items.Size; i++)
-				{
-					ImGui::TableNextColumn(); ImGui::Text(Items[i].Category);
-					ImGui::TableNextColumn(); ImGui::TextColored(GetVerbosityColor(Items[i].Verbosity), Items[i].Message);
-				}
+				ShowMessage();
 
 				ImGui::EndTable();
 			}
@@ -123,5 +154,20 @@ void FImDbgLogViewer::ShowMenu()
 
 			ImGui::End();
 		}
+	}
+}
+
+void FImDbgLogViewer::ShowMessage()
+{
+	for (int32 i = 0; i < Items.Size; i++)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, GetVerbosityColor(Items[i].Verbosity));
+		// Filter message
+		if (IsValid(Items[i].Category, Items[i].Verbosity))
+		{
+			ImGui::TableNextColumn(); ImGui::TextUnformatted(Items[i].Category);
+			ImGui::TableNextColumn(); ImGui::TextUnformatted(Items[i].Message);
+		}
+		ImGui::PopStyleColor();
 	}
 }
