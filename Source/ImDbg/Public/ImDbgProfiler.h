@@ -112,6 +112,16 @@ public:
 		int32 UsageCount;
 	};
 
+	struct FRenderTargetViewInfo
+	{
+		FString Name;
+		FVector2D Dimension;
+		float Size;
+		int32 MipLevels;
+		EPixelFormat PixelFormat;
+		int32 UnusedFrames;
+	};
+
 public:
 	FImDbgMemoryProfiler(bool* bInEnabled);
 	~FImDbgMemoryProfiler();
@@ -123,12 +133,16 @@ public:
 	void ShowRenderTargetMemoryView();
 
 	void UpdateTextureViewInfos();
+	void UpdateRenderTargetViewInfos();
 
 private:
 	bool* bEnabled;
 
 	bool bRequestUpdateTextureInfo = true;
 	TArray<TSharedPtr<FTextureViewInfo>> TextureViewInfoList;
+
+	bool bRequestUpdateRenderTargetInfo = true;
+	TArray<TSharedPtr<FRenderTargetViewInfo>> RenderTargetViewInfoList;
 };
 
 class FImDbgGPUProfiler : public FImDbgExtension

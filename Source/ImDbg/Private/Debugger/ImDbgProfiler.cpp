@@ -5,6 +5,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/TextureLODSettings.h"
 #include "GenericPlatform/GenericPlatformMemory.h"
+#include "RenderTargetPool.h"
 #include "Stats/StatsData.h"
 #include <imgui_internal.h>
 #include <implot.h>
@@ -45,6 +46,33 @@ float HelperGetStat(FName StatName)
 
 	return 0.f;
 }
+
+static void DumpGPUTime(FOutputDevice& OutputDevice)
+{
+	TArray<FStatMessage> Stats;
+	GetPermanentStats(Stats);
+
+	FName NAME_STATGROUP_GPU(FStatGroup_STATGROUP_GPU::GetGroupName());
+	for (int32 Index = 0; Index < Stats.Num(); Index++)
+	{
+		FStatMessage const& Meta = Stats[Index];
+		FName LastGroup = Meta.NameAndInfo.GetGroupName();
+
+		for (int32 i = 0; i < EStatMetaFlags::Num; ++i)
+		{
+			if (LastGroup == NAME_STATGROUP_GPU && Meta.NameAndInfo.GetFlag((EStatMetaFlags::Type)i))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s"), *FStatsUtils::DebugPrint(Meta));
+			}
+		}
+	}
+}
+
+static FAutoConsoleCommandWithOutputDevice GDumpGPUTime(
+	TEXT("rhi.DumpGPUTime"),
+	TEXT("Dumps GPU time of each pass"),
+	FConsoleCommandWithOutputDeviceDelegate::CreateStatic(DumpGPUTime)
+);
 #endif
 
 FImDbgStats::FImDbgStats()
@@ -333,7 +361,14 @@ void FImDbgMemoryProfiler::ShowMenu()
 			}
 			if (ImGui::BeginTabItem("RenderTarget"))
 			{
+				if (bRequestUpdateRenderTargetInfo)
+				{
+					UpdateRenderTargetViewInfos();
+					bRequestUpdateRenderTargetInfo = false;
+				}
+				ImGui::BeginChild("RTTabContent");
 				ShowRenderTargetMemoryView();
+				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 			ImGui::SameLine(ImGui::GetWindowWidth() - 2 * ImGui::CalcTextSize("Update").x);
@@ -341,6 +376,9 @@ void FImDbgMemoryProfiler::ShowMenu()
 			{
 				TextureViewInfoList.Empty();
 				bRequestUpdateTextureInfo = true;
+
+				RenderTargetViewInfoList.Empty();
+				bRequestUpdateRenderTargetInfo = true;
 			}
 			ImGui::EndTabBar();
 		}
@@ -375,18 +413,17 @@ void FImDbgMemoryProfiler::ShowGeneralStatsView()
 void FImDbgMemoryProfiler::ShowTextureMemoryView()
 {
 	const int32 TextureList_Column_Num = 8;
-	static float ColumnWidths[TextureList_Column_Num];
 
 	// Retrieve mapping from LOD group enum value to text representation.
 	static TArray<FString> TextureGroupNames = UTextureLODSettings::GetTextureGroupNames();
 
 	if (ImGui::BeginTable("TextureView", TextureList_Column_Num, ImGuiTableFlags_RowBg 
-		                                                               | ImGuiTableFlags_Borders 
-		                                                               | ImGuiTableFlags_Resizable 
-		                                                               | ImGuiTableFlags_Reorderable 
-		                                                               | ImGuiTableFlags_SizingFixedFit
-																	   | ImGuiTableFlags_NoHostExtendX
-	                                                                   | ImGuiTableFlags_Sortable))
+		                                                       | ImGuiTableFlags_Borders 
+		                                                       | ImGuiTableFlags_Resizable 
+		                                                       | ImGuiTableFlags_Reorderable 
+		                                                       | ImGuiTableFlags_SizingFixedFit
+															   | ImGuiTableFlags_NoHostExtendX
+	                                                           | ImGuiTableFlags_Sortable))
 	{
 		ImGui::TableSetupColumn("Name");
 		ImGui::TableSetupColumn("Dimension");
@@ -456,12 +493,74 @@ void FImDbgMemoryProfiler::ShowUObjectMermoryView()
 
 void FImDbgMemoryProfiler::ShowRenderTargetMemoryView()
 {
+	const int32 RenderTarget_Column_Num = 6;
+
+	if (ImGui::BeginTable("RenderTargetView", RenderTarget_Column_Num, ImGuiTableFlags_RowBg
+																	 | ImGuiTableFlags_Borders
+																     | ImGuiTableFlags_Resizable
+																	 | ImGuiTableFlags_Reorderable
+																	 | ImGuiTableFlags_SizingFixedFit
+																	 | ImGuiTableFlags_NoHostExtendX
+																	 | ImGuiTableFlags_Sortable))
+	{
+		ImGui::TableSetupColumn("Name");
+		ImGui::TableSetupColumn("Dimension");
+		ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
+		ImGui::TableSetupColumn("MipLevels");
+		ImGui::TableSetupColumn("Format");
+		ImGui::TableSetupColumn("Unused frames", ImGuiTableColumnFlags_PreferSortAscending);
+		ImGui::TableHeadersRow();
+
+		if (ImGuiTableSortSpecs* SortSpecs = ImGui::TableGetSortSpecs())
+		{
+			if (SortSpecs->SpecsDirty)
+			{
+				if (RenderTargetViewInfoList.Num() > 1)
+				{
+					RenderTargetViewInfoList.Sort([SortSpecs](const TSharedPtr<FRenderTargetViewInfo> A, const TSharedPtr<FRenderTargetViewInfo> B) -> bool
+						{
+							for (int32 i = 0; i < SortSpecs->SpecsCount; ++i)
+							{
+								const ImGuiTableColumnSortSpecs* ColumnSortSpecs = &SortSpecs->Specs[i];
+								int Delta = 0;
+								switch (ColumnSortSpecs->ColumnIndex)
+								{
+								case 0: /* Name */
+								case 1: /* Dimension */      return A->Dimension.X > B->Dimension.X;
+								case 2: /* Size */		     return A->Size > B->Size;
+								case 3: /* MipLevels */      return A->MipLevels > B->MipLevels;
+								case 4: /* Format */         return A->PixelFormat > B->PixelFormat;
+								case 5: /* UnusedFrames */   return A->UnusedFrames > B->UnusedFrames;
+								default: check(0); break;
+								}
+							}
+							return A->Size > B->Size;
+						});
+					SortSpecs->SpecsDirty = false;
+				}
+			}
+		}
+
+		if (RenderTargetViewInfoList.Num() > 0)
+		{
+			for (const TSharedPtr<FRenderTargetViewInfo> RenderTargetInfoPtr : RenderTargetViewInfoList)
+			{
+				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*(RenderTargetInfoPtr->Name)));
+				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*FString::Printf(TEXT("%dx%d"), (int32)RenderTargetInfoPtr->Dimension.X, (int32)RenderTargetInfoPtr->Dimension.Y)));
+				ImGui::TableNextColumn(); ImGui::Text("%.1f MB", RenderTargetInfoPtr->Size / 1024.0f);
+				ImGui::TableNextColumn(); ImGui::Text("%d", RenderTargetInfoPtr->MipLevels);
+				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(GetPixelFormatString(RenderTargetInfoPtr->PixelFormat)));
+				ImGui::TableNextColumn(); ImGui::Text("%d", RenderTargetInfoPtr->UnusedFrames);
+			}
+		}
+		ImGui::EndTable();
+	}
 }
 
 void FImDbgMemoryProfiler::UpdateTextureViewInfos()
 {
 	// Taken from LISTTEXTURES
-			// Find out how many times a texture is referenced by primitive components.
+	// Find out how many times a texture is referenced by primitive components.
 	TMap<UTexture*, int32> TextureToUsageMap;
 	for (TObjectIterator<UPrimitiveComponent> It; It; ++It)
 	{
@@ -559,6 +658,38 @@ void FImDbgMemoryProfiler::UpdateTextureViewInfos()
 		TextureViewInfoPtr->UsageCount = TextureToUsageMap.FindRef(Texture);
 		TextureViewInfoList.Add(TextureViewInfoPtr);
 	}
+}
+
+void FImDbgMemoryProfiler::UpdateRenderTargetViewInfos()
+{
+	uint32 UnusedAllocationInKB = 0;
+	for (uint32 i = 0; i < GRenderTargetPool.GetElementCount(); ++i)
+	{
+		if (FPooledRenderTarget* Element = GRenderTargetPool.GetElementById(i))
+		{
+			uint32 ElementAllocationInKB = (Element->ComputeMemorySize() + 1023) / 1024;
+			if (Element->GetUnusedForNFrames() > 2)
+			{
+				UnusedAllocationInKB += ElementAllocationInKB;
+			}
+
+			TSharedPtr<FRenderTargetViewInfo> RenderTargetInfo = MakeShared<FRenderTargetViewInfo>();
+			const FPooledRenderTargetDesc& Desc = Element->GetDesc();
+	
+			RenderTargetInfo->Name = Desc.DebugName;
+			RenderTargetInfo->Dimension = FVector2D(Desc.Extent.X, Desc.Extent.Y);
+			RenderTargetInfo->Size = ElementAllocationInKB / 1024.0f;
+			RenderTargetInfo->MipLevels = Desc.NumMips;
+			RenderTargetInfo->PixelFormat = Desc.Format;
+			RenderTargetInfo->UnusedFrames = Element->GetUnusedForNFrames();
+			RenderTargetViewInfoList.Add(RenderTargetInfo);
+		}
+	}
+
+	uint32 NumTargets = 0;
+	uint32 UsedKB = 0;
+	uint32 PoolKB = 0;
+	GRenderTargetPool.GetStats(NumTargets, PoolKB, UsedKB);
 }
 
 FImDbgGPUProfiler::FImDbgGPUProfiler(bool* bInEnabled)
