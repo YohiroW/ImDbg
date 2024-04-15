@@ -1,11 +1,28 @@
 #include "ImDbgEngine.h"
 #include "ImDbgManager.h"
+#include "ImDbgUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/ConsoleManager.h"
 #include "ShowFlags.h"
 
 #define IDB_ENGINE_CATRGORY          "Engine"
 #define IDB_ENGINE_CATRGORY_SHOWFLAG "ShowFlags"
+
+bool FImDbgEntry::operator== (const FImDbgEntry& Other)
+{
+	return this->Section == Other.Section
+		&& this->Command == Other.Command
+		&& this->Args == Other.Args
+		&& this->DisplayName == Other.DisplayName;
+}
+
+void FImDbgEntry::Execure()
+{
+	FString Argument = bToggled ? FString("1") : FString("0");
+	FString Cmd = FString::Printf(TEXT("%s %s"), *Command, *Argument);
+
+	UKismetSystemLibrary::ExecuteConsoleCommand(GEngine->GetWorld(), Cmd);
+}
 
 FImDbgEngine::FImDbgEngine()
 {
@@ -14,6 +31,12 @@ FImDbgEngine::FImDbgEngine()
 
 FImDbgEngine::~FImDbgEngine()
 {
+	if (Entries.Num() == 0)
+	{
+		return;
+	}
+
+	Entries.Empty();
 }
 
 void FImDbgEngine::Initialize()
@@ -24,7 +47,7 @@ void FImDbgEngine::Initialize()
 void FImDbgEngine::PushShowFlagEntry(FString InConsoleCommand)
 {
 	FString Category, CommandDisplayName;
-	ParseConsoleVariable(InConsoleCommand, Category, CommandDisplayName);
+	FImDbgUtil::ParseConsoleVariable(InConsoleCommand, Category, CommandDisplayName);
 	int32 ShowFlagIndex = FEngineShowFlags::FindIndexByName(*CommandDisplayName);
 
 	//FEngineShowFlags EditorShowFlags(ESFIM_Editor);
@@ -41,6 +64,16 @@ void FImDbgEngine::PushShowFlagEntry(FString InConsoleCommand)
 	Entry.Args = FString::Printf(TEXT("%d"),Value);
 
 	RegisterDebuggerEntry(Entry);
+}
+
+void FImDbgEngine::RegisterDebuggerEntry(const FImDbgEntry& Entry)
+{
+	Entries.Add(Entry);
+}
+
+void FImDbgEngine::UnregisterDebuggerEntry(const FImDbgEntry& Entry)
+{
+	Entries.Remove(Entry);
 }
 
 void FImDbgEngine::ShowMenu()

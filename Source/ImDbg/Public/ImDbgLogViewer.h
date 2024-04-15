@@ -56,6 +56,10 @@ public:
 	
 	ImVec4 GetVerbosityColor(const ELogVerbosity::Type Verbosity) const;
 
+protected:
+	// All registered entries
+	TArray<FImDbgEntry> Entries;
+
 private:
 	bool bEnabled = false;
 	bool VerbosityChannel[ELogVerbosity::NumVerbosity];

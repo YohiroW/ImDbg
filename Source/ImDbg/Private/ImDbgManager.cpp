@@ -3,6 +3,7 @@
 #include "ImDbgEngine.h"
 #include "ImDbgProfiler.h"
 #include "ImDbgLogViewer.h"
+#include "ImDbgSettings.h"
 #include "Misc/FileHelper.h"
 
 // From UnrealImGui plugin
@@ -32,7 +33,7 @@ FImDbgManager::FImDbgManager()
 
 void FImDbgManager::Initialize()
 {
-	LoadWhitelist();
+	TrackedCommands = GetDefault<UImDbgSettings>()->TrackedShowflags;
 
 	TSharedPtr<FImDbgEngine> EngineExt = MakeShared<FImDbgEngine>();
 	EngineExt->InitShowFlags(GetCommandsByCategory("ShowFlag"));
@@ -340,18 +341,6 @@ FVector FImDbgManager::GetPlayerLocation()
 	}
 
 	return PlayerLoc;
-}
-
-void FImDbgManager::LoadWhitelist(const FString& Whitelist)
-{	
-	// Load our white list commands
-	const FString PluginContentDir = FPaths::ProjectPluginsDir() / TEXT("UnrealImDbg/Content/");
-	const FString WhiteListFilePath = PluginContentDir/ Whitelist;
-
-	if (FFileHelper::LoadFileToStringArray(TrackedCommands, *WhiteListFilePath))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ImDbg whitelist loaded."));
-	}
 }
 
 bool FImDbgManager::IsTracked(const FString& InCommand)
