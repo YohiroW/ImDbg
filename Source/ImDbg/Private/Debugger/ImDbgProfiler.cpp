@@ -21,81 +21,52 @@
 //
 #if STATS
 template <EComplexStatField::Type ValueType, bool bCallCount = false>
-float HelperGetStat(FName StatName)
+double HelperGetStat(FName StatName)
 {
+	double Cycle = 0.0;
 	if (FGameThreadStatsData* StatsData = FLatestGameThreadStatsData::Get().Latest)
 	{
-		if (const FComplexStatMessage* StatMessage = StatsData->GetStatData(StatName))
+		for (FActiveStatGroupInfo ActiveStatGroup : StatsData->ActiveStatGroups)
 		{
-			if (bCallCount)
+			for (FComplexStatMessage CountersAggregate : ActiveStatGroup.CountersAggregate)
 			{
-				return (float)StatMessage->GetValue_CallCount(ValueType);
-			}
-			else
-			{
-				return (float)FPlatformTime::ToMilliseconds64(StatMessage->GetValue_Duration(ValueType));
+				const double IncAveValueDouble = CountersAggregate.GetValue_double(EComplexStatField::IncAve);
+				const double IncMaxValueDouble = CountersAggregate.GetValue_double(EComplexStatField::IncMax);
+				FName Name = CountersAggregate.GetShortName();
+				if (Name == StatName)
+				{
+					Cycle = IncAveValueDouble;
+					break;
+				}
 			}
 		}
 	}
-
-#if WITH_EDITOR
-	FText WarningOut = FText::Format(LOCTEXT("StatNotFound", "Could not find stat data for {0}, did you call ToggleStatGroup with enough time to capture data?"), FText::FromName(StatName));
-	FMessageLog("PIE").Warning(WarningOut);
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *WarningOut.ToString());
-#endif
-
-	return 0.f;
+	return Cycle;
 }
-
-static void DumpGPUTime(FOutputDevice& OutputDevice)
-{
-	TArray<FStatMessage> Stats;
-	GetPermanentStats(Stats);
-
-	FName NAME_STATGROUP_GPU(FStatGroup_STATGROUP_GPU::GetGroupName());
-	for (int32 Index = 0; Index < Stats.Num(); Index++)
-	{
-		FStatMessage const& Meta = Stats[Index];
-		FName LastGroup = Meta.NameAndInfo.GetGroupName();
-
-		for (int32 i = 0; i < EStatMetaFlags::Num; ++i)
-		{
-			if (LastGroup == NAME_STATGROUP_GPU && Meta.NameAndInfo.GetFlag((EStatMetaFlags::Type)i))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("%s"), *FStatsUtils::DebugPrint(Meta));
-			}
-		}
-	}
-}
-
-static FAutoConsoleCommandWithOutputDevice GDumpGPUTime(
-	TEXT("rhi.DumpGPUTime"),
-	TEXT("Dumps GPU time of each pass"),
-	FConsoleCommandWithOutputDeviceDelegate::CreateStatic(DumpGPUTime)
-);
 #endif
 
 FImDbgStats::FImDbgStats()
 {
-	Stats.FrameTime = FPlatformTime::ToMilliseconds(GGameThreadTime);
-	Stats.FPS = round(1000.0f / Stats.FrameTime);
-	Stats.GameThreadTime = FPlatformTime::ToMilliseconds(GGameThreadTime);
-	Stats.RenderThreadTime = FPlatformTime::ToMilliseconds(GRenderThreadTime);
-	Stats.GPUTime = FPlatformTime::ToMilliseconds(GGPUFrameTime);
-	Stats.RHIThreadTime = FPlatformTime::ToMilliseconds(GWorkingRHIThreadTime);
-	Stats.InputLatency = FPlatformTime::ToMilliseconds(GInputLatencyTimer.DeltaTime);
-	Stats.SwapBufferTime = FPlatformTime::ToMilliseconds(GSwapBufferTime);
+	//Stats.FrameTime = FPlatformTime::ToMilliseconds(GGameThreadTime);
+	//Stats.FPS = round(1000.0f / Stats.FrameTime);
+	//Stats.GameThreadTime = FPlatformTime::ToMilliseconds(GGameThreadTime);
+	//Stats.RenderThreadTime = FPlatformTime::ToMilliseconds(GRenderThreadTime);
+	//Stats.GPUTime = FPlatformTime::ToMilliseconds(GGPUFrameTime);
+	//Stats.RHIThreadTime = FPlatformTime::ToMilliseconds(GWorkingRHIThreadTime);
+	//Stats.InputLatency = FPlatformTime::ToMilliseconds(GInputLatencyTimer.DeltaTime);
+	//Stats.SwapBufferTime = FPlatformTime::ToMilliseconds(GSwapBufferTime);
 
 	AddNewFrameDelegate();
 }
 
 FImDbgStats::~FImDbgStats()
 {
-	RemoveNewFrameDelegate();
+	StopCollectPerfData();
 }
 
 void FImDbgStats::ShowMenu()
 {
+	static bool bEnabled = false;
 #if STATS
 	if (ImGui::Button("Stats", ImVec2(56, 22)))
 	{
@@ -107,14 +78,27 @@ void FImDbgStats::ShowMenu()
 		{
 			StopCollectPerfData();
 		}
+
+		bEnabled = !bEnabled;
 	}
 
-	if (bIsCollecting)
+	if (bEnabled)
 	{
-		float RenderingTime = HelperGetStat<EComplexStatField::IncAve>(FName(TEXT("STAT_TotalSceneRenderingTime")));
-		UE_LOG(LogImDbg, Warning, TEXT("RenderingTime : %f]"), RenderingTime);
-	}
+		//float RenderingTime = HelperGetStat<EComplexStatField::IncAve>(FName(TEXT("STAT_TotalSceneRenderingTime")));
+		//UE_LOG(LogImDbg, Warning, TEXT("RenderingTime : %f]"), RenderingTime);
 
+		// case
+		double Duration = HelperGetStat<EComplexStatField::ExcAve>(FName("Stat_GPU_Basepass"));
+		double Duration2 = HelperGetStat<EComplexStatField::ExcAve>(FName("Stat_GPU_Total"));
+
+		if (ImGui::Begin("GPUStats", &bIsCollecting))
+		{
+			ImGui::Text("%lf", Duration);
+			ImGui::Text("%lf", Duration2);
+
+			ImGui::End();
+		}
+	}
 #endif
 }
 
@@ -136,60 +120,7 @@ void FImDbgStats::RemoveNewFrameDelegate()
 
 void FImDbgStats::HandleNewFrame(int64 Frame)
 {
-#if 0
-	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
-	if (!Stats.IsFrameValid(Frame))
-	{
-		return;
-	}
 
-	// Stat group to request
-	FName StatGroupName = FName(TEXT("STATGROUP_scenerendering"));
-
-	// Gather stats of this group
-	TArray<FName> GroupRows;
-	Stats.Groups.MultiFind(StatGroupName, GroupRows);
-
-	// 
-	TSet<FName> EnabledRows;
-	for (const FName& ShortName : GroupRows)
-	{
-		EnabledRows.Add(ShortName);
-		Stats.ShortNameToLongName.FindOrAdd(ShortName);
-	}
-
-	// Filter for stats gather function
-	FGroupFilter Filter(EnabledRows);
-
-	// Empty stack node
-	FRawStatStackNode HierarchyInclusive;
-
-	// For result
-	TArray<FStatMessage> NonStackStats;
-	Stats.UncondenseStackStats(Frame, HierarchyInclusive, nullptr, &NonStackStats);
-
-	for (FStatMessage Stat : NonStackStats)
-	{
-		FName StatName = Stat.NameAndInfo.GetRawName();
-
-		int64 IntegerRet;
-		double DoubleRet;
-
-		switch (Stat.NameAndInfo.GetField<EStatDataType>())
-		{
-		case EStatDataType::ST_int64:
-			IntegerRet = Stat.GetValue_int64();
-			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %lld]"), *StatName.ToString(), IntegerRet);
-			break;
-		case EStatDataType::ST_double:
-			DoubleRet = Stat.GetValue_double();
-			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %f]"), *StatName.ToString(), DoubleRet);
-			break;
-		default:
-			break;
-		}
-	}
-#endif
 }
 
 void FImDbgStats::HandleNewFrameGT()
@@ -216,67 +147,6 @@ void FImDbgStats::StopCollectPerfData()
 		StatsPrimaryEnableSubtract();
 		bIsCollecting = false;
 	}
-}
-
-void FImDbgStats::GetStats()
-{
-#if 0
-	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
-	int64 LastGameFrame = Stats.GetLatestValidFrame();
-
-	if (!Stats.IsFrameValid(LastGameFrame))
-	{
-		return;
-	}
-
-	// Stat group to request
-	FName StatGroupName = FName(TEXT("STATGROUP_scenerendering"));
-
-	// Gather stats of this group
-	TArray<FName> GroupRows;
-	Stats.Groups.MultiFind(StatGroupName, GroupRows);
-
-	// 
-	TSet<FName> EnabledRows;
-	for (const FName& ShortName: GroupRows)
-	{
-		EnabledRows.Add(ShortName);
-		Stats.ShortNameToLongName.FindOrAdd(ShortName);	
-	}
-
-	// Filter for stats gather function
-	FGroupFilter Filter(EnabledRows);
-
-	// Empty stack node
-	FRawStatStackNode HierarchyInclusive;
-	
-	// For result
-	TArray<FStatMessage> NonStackStats;
-
-	Stats.UncondenseStackStats(LastGameFrame, HierarchyInclusive, &Filter, &NonStackStats);
-
-	for (FStatMessage Stat: NonStackStats)
-	{
-		FName StatName = Stat.NameAndInfo.GetRawName();
-
-		int64 IntegerRet;
-		double DoubleRet;
-
-		switch (Stat.NameAndInfo.GetField<EStatDataType>())
-		{
-		case EStatDataType::ST_int64:
-			IntegerRet = Stat.GetValue_int64();
-			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %lld]"), *StatName.ToString(), IntegerRet);
-			break;
-		case EStatDataType::ST_double:
-			DoubleRet = Stat.GetValue_double();
-			UE_LOG(LogImDbg, Warning, TEXT("Gather stat [%s : %f]"), *StatName.ToString(), DoubleRet);
-			break;
-		default:
-			break;
-		}
-	}
-#endif
 }
 
 FStatsFetchThread::FStatsFetchThread(FImDbgStats& InStatsDebugger)
@@ -371,6 +241,8 @@ void FImDbgMemoryProfiler::ShowMenu()
 				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
+			ImGui::EndTabBar();
+
 			ImGui::SameLine(ImGui::GetWindowWidth() - 2 * ImGui::CalcTextSize("Update").x);
 			if (ImGui::Button("Update"))
 			{
@@ -380,7 +252,6 @@ void FImDbgMemoryProfiler::ShowMenu()
 				RenderTargetViewInfoList.Empty();
 				bRequestUpdateRenderTargetInfo = true;
 			}
-			ImGui::EndTabBar();
 		}
 		ImGui::End();
 	}
@@ -423,6 +294,7 @@ void FImDbgMemoryProfiler::ShowTextureMemoryView()
 		                                                       | ImGuiTableFlags_Reorderable 
 		                                                       | ImGuiTableFlags_SizingFixedFit
 															   | ImGuiTableFlags_NoHostExtendX
+															   | ImGuiTableFlags_ScrollY
 	                                                           | ImGuiTableFlags_Sortable))
 	{
 		ImGui::TableSetupColumn("Name");
@@ -501,6 +373,7 @@ void FImDbgMemoryProfiler::ShowRenderTargetMemoryView()
 																	 | ImGuiTableFlags_Reorderable
 																	 | ImGuiTableFlags_SizingFixedFit
 																	 | ImGuiTableFlags_NoHostExtendX
+																	 | ImGuiTableFlags_ScrollY
 																	 | ImGuiTableFlags_Sortable))
 	{
 		ImGui::TableSetupColumn("Name");
@@ -547,7 +420,7 @@ void FImDbgMemoryProfiler::ShowRenderTargetMemoryView()
 			{
 				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*(RenderTargetInfoPtr->Name)));
 				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*FString::Printf(TEXT("%dx%d"), (int32)RenderTargetInfoPtr->Dimension.X, (int32)RenderTargetInfoPtr->Dimension.Y)));
-				ImGui::TableNextColumn(); ImGui::Text("%.1f MB", RenderTargetInfoPtr->Size / 1024.0f);
+				ImGui::TableNextColumn(); ImGui::Text("%.3f MB", RenderTargetInfoPtr->Size);
 				ImGui::TableNextColumn(); ImGui::Text("%d", RenderTargetInfoPtr->MipLevels);
 				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(GetPixelFormatString(RenderTargetInfoPtr->PixelFormat)));
 				ImGui::TableNextColumn(); ImGui::Text("%d", RenderTargetInfoPtr->UnusedFrames);
@@ -675,8 +548,8 @@ void FImDbgMemoryProfiler::UpdateRenderTargetViewInfos()
 
 			TSharedPtr<FRenderTargetViewInfo> RenderTargetInfo = MakeShared<FRenderTargetViewInfo>();
 			const FPooledRenderTargetDesc& Desc = Element->GetDesc();
-	
-			RenderTargetInfo->Name = Desc.DebugName;
+
+			RenderTargetInfo->Name = FString(Desc.DebugName);
 			RenderTargetInfo->Dimension = FVector2D(Desc.Extent.X, Desc.Extent.Y);
 			RenderTargetInfo->Size = ElementAllocationInKB / 1024.0f;
 			RenderTargetInfo->MipLevels = Desc.NumMips;
@@ -764,77 +637,121 @@ struct RollingBuffer
 
 void FImDbgGPUProfiler::ShowMenu()
 {
+	if (!IsRegistered())
+	{
+		StatsPrimaryEnableAdd();
+		RegisterDelegate();
+	}
+
 	if (ImGui::Begin("GPUProfiler", bEnabled))
 	{
 		static RollingBuffer FrameTimeData, RTTimeData, GPUTimeData, RHITTimeData;
-		static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+		static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_AutoFit;
 		static float History = 10.0f;
 		static float UpLimit = 33.0f;
 
 		static float t = 0;
 		t += ImGui::GetIO().DeltaTime;
-
 		const float Millis = ImGui::GetIO().DeltaTime * 1000.0f;
 
-		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::Frame], &IsGPUProfilerEnabled[EGPUProfilerType::Frame]); ImGui::SameLine();
-		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::RenderThread], &IsGPUProfilerEnabled[EGPUProfilerType::RenderThread]); ImGui::SameLine();
-		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::GPU], &IsGPUProfilerEnabled[EGPUProfilerType::GPU]); ImGui::SameLine();
-		ImGui::Checkbox(GPUProfilerTypeText[EGPUProfilerType::RHI], &IsGPUProfilerEnabled[EGPUProfilerType::RHI]);
-
-		if (IsGPUProfilerEnabled[EGPUProfilerType::Frame])
+		if (ImGui::CollapsingHeader("General"))
 		{
-			FrameTimeData.AddPoint(t, Millis);
-		}
-		if (IsGPUProfilerEnabled[EGPUProfilerType::RenderThread])
-		{
-			RTTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
-		}
-		if (IsGPUProfilerEnabled[EGPUProfilerType::GPU])
-		{
-			GPUTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
-		}
-		if (IsGPUProfilerEnabled[EGPUProfilerType::RHI])
-		{
-			RHITTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
-		}
-		
-		ImGui::SliderFloat("History", &History, 1, 10.0f, "%.1f s");
-		FrameTimeData.Span = History;
-		RTTimeData.Span = History;
-		RHITTimeData.Span = History;
-		GPUTimeData.Span = History;
-
-		ImGui::SliderFloat("UpLimit", &UpLimit, 0, 33.0f, "%.1f s");
-
-		if (ImPlot::BeginPlot("GPUGeneral"))
-		{
-			ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
-			ImPlot::SetupAxisLimits(ImAxis_X1, 0, History, ImGuiCond_Always);
-			ImPlot::SetupAxisLimits(ImAxis_Y1, 0, UpLimit);
-			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-
 			if (IsGPUProfilerEnabled[EGPUProfilerType::Frame])
 			{
-				ImPlot::PlotLine("Frame", &FrameTimeData.Data[0].x, &FrameTimeData.Data[0].y, FrameTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				FrameTimeData.AddPoint(t, Millis);
 			}
 			if (IsGPUProfilerEnabled[EGPUProfilerType::RenderThread])
 			{
-				ImPlot::PlotLine("Render", &RTTimeData.Data[0].x, &RTTimeData.Data[0].y, RTTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				RTTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
 			}
 			if (IsGPUProfilerEnabled[EGPUProfilerType::GPU])
 			{
-				ImPlot::PlotLine("GPU", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				GPUTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
 			}
 			if (IsGPUProfilerEnabled[EGPUProfilerType::RHI])
 			{
-				ImPlot::PlotLine("RHI", &RHITTimeData.Data[0].x, &RHITTimeData.Data[0].y, RHITTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				RHITTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
 			}
 
-			ImPlot::PopStyleVar();
-			ImPlot::EndPlot();
+			FrameTimeData.Span = History;
+			RTTimeData.Span = History;
+			RHITTimeData.Span = History;
+			GPUTimeData.Span = History;
+
+			if (ImPlot::BeginPlot(""))
+			{
+				ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
+				ImPlot::SetupAxisLimits(ImAxis_X1, 0, History, ImGuiCond_Always);
+				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, UpLimit);
+				ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+
+				if (IsGPUProfilerEnabled[EGPUProfilerType::Frame])
+				{
+					ImPlot::PlotLine("Frame", &FrameTimeData.Data[0].x, &FrameTimeData.Data[0].y, FrameTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				}
+				if (IsGPUProfilerEnabled[EGPUProfilerType::RenderThread])
+				{
+					ImPlot::PlotLine("Render", &RTTimeData.Data[0].x, &RTTimeData.Data[0].y, RTTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				}
+				if (IsGPUProfilerEnabled[EGPUProfilerType::GPU])
+				{
+					ImPlot::PlotLine("GPU", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				}
+				if (IsGPUProfilerEnabled[EGPUProfilerType::RHI])
+				{
+					ImPlot::PlotLine("RHI", &RHITTimeData.Data[0].x, &RHITTimeData.Data[0].y, RHITTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				}
+
+				ImPlot::PopStyleVar();
+				ImPlot::EndPlot();
+			}
+
+			if (ImGui::BeginMenu("Threads"))
+			{
+				for (int32 i = 0; i < EGPUProfilerType::GPUProfiler_Count; i++)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+					ImGui::MenuItem(GPUProfilerTypeText[i], "", &IsGPUProfilerEnabled[i]);
+					ImGui::PopItemFlag();
+				}
+				ImGui::EndMenu();
+			}
+		}
+		if (ImGui::CollapsingHeader("GPU Time"))
+		{
+			ImGui::BeginChild("GPU Time", ImVec2(0, 0), true);
+			if (ImGui::BeginTable("GPU Time", 2, ImGuiTableFlags_RowBg
+				| ImGuiTableFlags_Borders
+				| ImGuiTableFlags_SizingFixedFit))
+			{
+				ImGui::TableSetupColumn("Pass");
+				ImGui::TableSetupColumn("Time(ms)", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
+				ImGui::TableSetupColumn("Budget(ms)");
+				ImGui::TableHeadersRow();
+
+				for (auto Pair: GPUStats)
+				{
+					if (Pair.Value > 0.0001)
+					{
+						FString PassName = Pair.Key.ToString();
+						PassName.RemoveFromStart(TEXT("Stat_GPU_"));
+
+						ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*PassName));
+						ImGui::TableNextColumn(); ImGui::Text("%.3lf", Pair.Value);
+						//ImGui::TableNextColumn(); ImGui::Text("0.0");
+					}
+				}
+				ImGui::EndTable();
+			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 	}
+}
+
+void FImDbgGPUProfiler::ShowGPUGeneral()
+{
+
 }
 
 void FImDbgGPUProfiler::Initialize()
@@ -842,6 +759,88 @@ void FImDbgGPUProfiler::Initialize()
 	for (int32 i = 0; i< EGPUProfilerType::GPUProfiler_Count; ++i)
 	{
 		IsGPUProfilerEnabled[i] = false;
+	}
+}
+
+void FImDbgGPUProfiler::RegisterDelegate()
+{
+#if STATS
+	const FStatsThreadState& StatsState = FStatsThreadState::GetLocalState();
+	OnNewFrameDelegateHandle = StatsState.NewFrameDelegate.AddRaw(this, &FImDbgGPUProfiler::OnHandleNewFrame);
+#endif
+
+	bIsRegistered = true;
+}
+
+void FImDbgGPUProfiler::UnRegisterDelegate()
+{
+#if STATS
+	const FStatsThreadState& StatsState = FStatsThreadState::GetLocalState();
+	StatsState.NewFrameDelegate.Remove(OnNewFrameDelegateHandle);
+#endif
+
+	bIsRegistered = false;
+}
+
+void FImDbgGPUProfiler::OnHandleNewFrame(int64 Frame)
+{
+	// Collect GPU every 4 frame
+	static int32 FrameCounter = 0;
+	FrameCounter = (FrameCounter +1) % 4;
+	if (FrameCounter != 0)
+	{
+		return;
+	}
+
+	FStatsThreadState& Stats = FStatsThreadState::GetLocalState();
+	if (!Stats.IsFrameValid(Frame))
+	{
+		return;
+	}
+
+	// Stat group to request
+	FName StatGroupName = FName(TEXT("STATGROUP_GPU"));
+
+	// Gather stats of this group
+	TArray<FName> GroupRows;
+	Stats.Groups.MultiFind(StatGroupName, GroupRows);
+
+	// 
+	TSet<FName> EnabledRows;
+	for (const FName& ShortName : GroupRows)
+	{
+		EnabledRows.Add(ShortName);
+		if (FStatMessage const* LongName = Stats.ShortNameToLongName.Find(ShortName))
+		{
+			EnabledRows.Add(LongName->NameAndInfo.GetRawName());
+		}
+	}
+
+	// Filter for stats gather function
+	FGroupFilter Filter(EnabledRows);
+
+	// Empty stack node
+	FRawStatStackNode HierarchyInclusive;
+
+	// For result
+	TArray<FStatMessage> NonStackStats;
+	Stats.UncondenseStackStats(Frame, HierarchyInclusive, &Filter, &NonStackStats);
+
+	if (NonStackStats.Num() > 0)
+	{
+		for (FStatMessage Stat : NonStackStats)
+		{
+			FName StatName = Stat.NameAndInfo.GetShortName();
+			double CycleTime = Stat.GetValue_double();
+			if (!GPUStats.Contains(StatName))
+			{
+				GPUStats.Add(StatName, CycleTime);
+			}
+			else
+			{
+				GPUStats[StatName] = (GPUStats[StatName] + CycleTime) * 0.5f;
+			}
+		}
 	}
 }
 
