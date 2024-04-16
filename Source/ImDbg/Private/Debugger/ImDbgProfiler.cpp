@@ -646,7 +646,9 @@ void FImDbgGPUProfiler::ShowMenu()
 	if (ImGui::Begin("GPUProfiler", bEnabled))
 	{
 		static RollingBuffer FrameTimeData, RTTimeData, GPUTimeData, RHITTimeData;
-		static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_AutoFit;
+		static ImPlotAxisFlags FlagX = ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_AutoFit;
+		static ImPlotAxisFlags FlagY = ImPlotAxisFlags_AutoFit;
+		static ImPlotLegendFlags FlagLegend = ImPlotLegendFlags_Horizontal;
 		static float History = 10.0f;
 		static float UpLimit = 33.0f;
 
@@ -680,7 +682,8 @@ void FImDbgGPUProfiler::ShowMenu()
 
 			if (ImPlot::BeginPlot(""))
 			{
-				ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
+				ImPlot::SetupAxes(nullptr, nullptr, FlagX, FlagY);
+				ImPlot::SetupLegend(ImPlotLocation_NorthWest, ImPlotLegendFlags_Horizontal);
 				ImPlot::SetupAxisLimits(ImAxis_X1, 0, History, ImGuiCond_Always);
 				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, UpLimit);
 				ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
