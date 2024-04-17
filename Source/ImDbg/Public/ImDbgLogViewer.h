@@ -56,15 +56,11 @@ public:
 	
 	ImVec4 GetVerbosityColor(const ELogVerbosity::Type Verbosity) const;
 
-protected:
-	// All registered entries
-	TArray<FImDbgEntry> Entries;
-
 private:
 	bool bEnabled = false;
-	bool VerbosityChannel[ELogVerbosity::NumVerbosity];
-	
-	TMap<FString, bool> CategoryChannels;
+	bool bAutoScroll = false;
+	int8 VerbosityMask = 0x0;
 
+	TMap<FString, bool> CategoryChannels;
 	ImVector<LogItem> Items;
 };
