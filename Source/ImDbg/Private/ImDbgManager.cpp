@@ -39,9 +39,6 @@ void FImDbgManager::Initialize()
 	EngineExt->InitShowFlags(GetCommandsByCategory("ShowFlag"));
 	RegisterDebuggerExtension(EngineExt);
 
-	TSharedPtr<FImDbgStats> StatExt = MakeShared<FImDbgStats>();
-	RegisterDebuggerExtension(StatExt);
-
 	TSharedPtr<FImDbgProfiler> ProfilerExt = MakeShared<FImDbgProfiler>();
 	ProfilerExt->Initialize();
 	RegisterDebuggerExtension(ProfilerExt);
