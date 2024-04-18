@@ -11,10 +11,7 @@
 #include <implot.h>
 
 #define LOCTEXT_NAMESPACE "ImDbg"
-
 #define IDB_PROFILER_CATRGORY "Profiler"
-#define ToMegaByte(_BYTE_) (_BYTE_ / 1024.0f / 1024.0f )
-
 
 FImDbgProfiler::FImDbgProfiler()
 {

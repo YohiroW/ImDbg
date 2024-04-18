@@ -6,6 +6,8 @@
 #include "GenericPlatform/GenericPlatformMemory.h"
 #include "RenderTargetPool.h"
 
+#define ToMegaByte(_BYTE_) (_BYTE_ / 1024.0f / 1024.0f )
+
 FImDbgMemoryProfiler::FImDbgMemoryProfiler(bool* bInEnabled)
 {
 	bEnabled = bInEnabled;
