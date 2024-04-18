@@ -10,8 +10,7 @@
 
 bool FImDbgEntry::operator== (const FImDbgEntry& Other)
 {
-	return this->Section == Other.Section
-		&& this->Command == Other.Command
+	return this->Command == Other.Command
 		&& this->Args == Other.Args
 		&& this->DisplayName == Other.DisplayName;
 }
@@ -59,7 +58,6 @@ void FImDbgEngine::PushShowFlagEntry(FString InConsoleCommand)
 	FImDbgEntry Entry;
 	Entry.Command = InConsoleCommand;
 	Entry.DisplayName = CommandDisplayName;
-	Entry.Section = EDebugSection::Engine;
 	Entry.bToggled = bSet;
 	Entry.Args = FString::Printf(TEXT("%d"),Value);
 

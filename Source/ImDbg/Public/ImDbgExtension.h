@@ -3,14 +3,6 @@
 #include "CoreMinimal.h"
 #include <imgui.h>
 
-enum EDebugSection: uint8
-{
-    None,
-    Engine,
-    Project,     // project should be private
-    Num
-};
-
 class IImDbgExtension
 {
 public:

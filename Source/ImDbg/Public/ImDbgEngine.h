@@ -5,7 +5,6 @@
 // Each imgui debug entry
 struct FImDbgEntry
 {
-	EDebugSection Section;
 	FString Command;
 	FString Args;
 	bool bToggled;
