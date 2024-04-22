@@ -50,7 +50,7 @@ public:
 
 	void Initialize();
 
-	virtual void ShowMenu() override;
+	virtual void ShowMenu(float InDeltaTime) override;
 
 private:
 	bool bShowCPUProfiler = false;

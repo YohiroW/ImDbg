@@ -47,7 +47,7 @@ public:
 	virtual void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const class FName& Category) override;
 	// End FOutputDevice interface
 
-	virtual void ShowMenu() override;
+	virtual void ShowMenu(float InDeltaTime) override;
 	void ShowMessage();
 	void Initialize();
 	void Clear();

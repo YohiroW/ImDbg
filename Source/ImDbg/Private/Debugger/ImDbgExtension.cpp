@@ -16,7 +16,7 @@ void FImDbgExtension::Release()
 
 }
 
-void FImDbgExtension::ShowMenu()
+void FImDbgExtension::ShowMenu(float InDeltaTime)
 {
 	UE_LOG(LogImDbg, Log, TEXT("To be implemented."));
 }

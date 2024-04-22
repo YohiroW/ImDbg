@@ -6,7 +6,7 @@
 class IImDbgExtension
 {
 public:
-    virtual void ShowMenu() = 0;
+    virtual void ShowMenu(float InDeltaTime) = 0;
 };
 
 class FImDbgExtension : public IImDbgExtension
@@ -17,5 +17,5 @@ public:
 
     virtual void Release();
 
-    virtual void ShowMenu() override;
+    virtual void ShowMenu(float InDeltaTime) override;
 };

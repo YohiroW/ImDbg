@@ -17,7 +17,7 @@ FImDbgMemoryProfiler::~FImDbgMemoryProfiler()
 {
 }
 
-void FImDbgMemoryProfiler::ShowMenu()
+void FImDbgMemoryProfiler::ShowMenu(float InDeltaTime)
 {
 	if (ImGui::Begin("MemoryProfiler", bEnabled))
 	{
@@ -133,14 +133,14 @@ void FImDbgMemoryProfiler::ShowTextureMemoryView()
 															   | ImGuiTableFlags_ScrollY
 	                                                           | ImGuiTableFlags_Sortable))
 	{
-		ImGui::TableSetupColumn("Name");
-		ImGui::TableSetupColumn("Dimension");
-		ImGui::TableSetupColumn("InMemSize", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
-		ImGui::TableSetupColumn("Format");
-		ImGui::TableSetupColumn("TextureGroup");
-		ImGui::TableSetupColumn("IsStreaming");
-		ImGui::TableSetupColumn("IsVirtual");
-		ImGui::TableSetupColumn("UsageCount", ImGuiTableColumnFlags_PreferSortAscending);
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("Dimension", ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("InMemSize", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending | ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("Format", ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("TextureGroup", ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("IsStreaming", ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("IsVirtual", ImGuiTableColumnFlags_IsVisible);
+		ImGui::TableSetupColumn("UsageCount", ImGuiTableColumnFlags_PreferSortAscending | ImGuiTableColumnFlags_IsVisible);
 		ImGui::TableHeadersRow();
 
 		if (ImGuiTableSortSpecs* SortSpecs = ImGui::TableGetSortSpecs())
@@ -175,7 +175,7 @@ void FImDbgMemoryProfiler::ShowTextureMemoryView()
 			}
 		}
 
-		if (TextureViewInfoList.Num() > 0)
+		if (!TextureViewInfoList.IsEmpty())
 		{
 			for (const TSharedPtr<FTextureViewInfo> TextureInfoPtr : TextureViewInfoList)
 			{
@@ -250,7 +250,7 @@ void FImDbgMemoryProfiler::ShowRenderTargetMemoryView()
 			}
 		}
 
-		if (RenderTargetViewInfoList.Num() > 0)
+		if (!RenderTargetViewInfoList.IsEmpty())
 		{
 			for (const TSharedPtr<FRenderTargetViewInfo> RenderTargetInfoPtr : RenderTargetViewInfoList)
 			{

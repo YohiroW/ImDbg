@@ -42,23 +42,19 @@ public:
 	virtual TStatId GetStatId() const override;
 	// FTickableGameObject implementation End
 
-	bool ExecuteCommand(const UObject* WorldContextObject, const FString& Command);
-
     void RegisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
     void UnregisterDebuggerExtension(TSharedPtr<FImDbgExtension> InExtension);
 
 	void OnViewportResized(FViewport* Viewport, uint32 Unused);
 
-	void ShowMainMenu(float DeltaTime);
+	void ShowMainMenu(float InDeltaTime);
 	
 	// Show stats like 'stat unit'
 	void ShowOverlay();
 
 	FVector GetPlayerLocation();
 
-	void LoadWhitelist(const FString& Whitelist = IDG_WHITELIST);
 	bool IsTracked(const FString& InCommand);
-
 	TArray<FString> GetCommandsByCategory(const FString& InCategory);
 
 	// TODO: try use FStatUnitData to gather stats data

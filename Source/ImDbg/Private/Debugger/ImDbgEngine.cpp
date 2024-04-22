@@ -74,7 +74,7 @@ void FImDbgEngine::UnregisterDebuggerEntry(const FImDbgEntry& Entry)
 	Entries.Remove(Entry);
 }
 
-void FImDbgEngine::ShowMenu()
+void FImDbgEngine::ShowMenu(float InDeltaTime)
 {
     if (ImGui::BeginMenu(IDB_ENGINE_CATRGORY))
     {

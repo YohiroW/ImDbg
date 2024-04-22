@@ -52,10 +52,10 @@ ImVec4 FImDbgLogViewer::GetVerbosityColor(const ELogVerbosity::Type Verbosity) c
 {
 	switch (Verbosity)
 	{
-	case ELogVerbosity::Fatal:	      return ImVec4(1.0f, 0.0f, 0.5f, 1.0f);
-	case ELogVerbosity::Error:        return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-	case ELogVerbosity::Warning:      return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
-	case ELogVerbosity::Display:      return ImVec4(0.5f, 1.0f, 0.5f, 1.0f);
+	case ELogVerbosity::Fatal:	      return ImVec4(0.8f, 0.14f, 0.11f, 1.0f);
+	case ELogVerbosity::Error:        return ImVec4(0.98f, 0.29f, 0.20f, 1.0f);
+	case ELogVerbosity::Warning:      return ImVec4(0.98f, 0.74f, 0.18f, 1.0f);
+	case ELogVerbosity::Display:      return ImVec4(0.56f, 0.75f, 0.49f, 1.0f);
 	case ELogVerbosity::Log:	      return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	case ELogVerbosity::Verbose:      return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	case ELogVerbosity::VeryVerbose:  return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -81,7 +81,7 @@ void FImDbgLogViewer::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbos
 	}
 }
 
-void FImDbgLogViewer::ShowMenu()
+void FImDbgLogViewer::ShowMenu(float InDeltaTime)
 {
 	if (ImGui::Button("Console"))
 	{
@@ -157,9 +157,11 @@ void FImDbgLogViewer::ShowMenu()
 
 			// Log content
 			ImGui::BeginChild("LogContent");
-			if (ImGui::BeginTable("LogTable", 2, ImGuiTableFlags_Borders))
+			if (ImGui::BeginTable("LogTable", 2, ImGuiTableFlags_RowBg
+														    | ImGuiTableFlags_Borders
+															| ImGuiTableFlags_SizingFixedFit))
 			{
-				ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 100.0f);
+				ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_DefaultHide);
 				ImGui::TableSetupColumn("Log", ImGuiTableColumnFlags_DefaultHide);
 				ShowMessage();
 				ImGui::EndTable();
@@ -175,17 +177,18 @@ void FImDbgLogViewer::ShowMessage()
 {
 	for (int32 i = 0; i < Items.Size; i++)
 	{
-		ImGui::PushStyleColor(ImGuiCol_Text, GetVerbosityColor(Items[i].Verbosity));
 		// Filter message
 		if (IsValid(Items[i].Category, Items[i].Verbosity))
 		{
 			ImGui::TableNextColumn(); ImGui::TextUnformatted(Items[i].Category);
+			ImGui::PushStyleColor(ImGuiCol_Text, GetVerbosityColor(Items[i].Verbosity));
 			ImGui::TableNextColumn(); ImGui::TextUnformatted(Items[i].Message);
+			ImGui::PopStyleColor();
 			if (bAutoScroll)
 			{
 				ImGui::SetScrollHereY(1.0f);
 			}
 		}
-		ImGui::PopStyleColor();
+
 	}
 }

@@ -32,7 +32,7 @@ public:
 	FImDbgMemoryProfiler(bool* bInEnabled);
 	~FImDbgMemoryProfiler();
 
-	virtual void ShowMenu() override;
+	virtual void ShowMenu(float InDeltaTime) override;
 	void ShowGeneralStatsView();
 	void ShowTextureMemoryView();
 	void ShowUObjectMermoryView();

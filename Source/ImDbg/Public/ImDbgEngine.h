@@ -20,7 +20,7 @@ public:
 	FImDbgEngine();
     virtual ~FImDbgEngine();
 
-    virtual void ShowMenu() override;
+    virtual void ShowMenu(float InDeltaTime) override;
 
     void Initialize();
 

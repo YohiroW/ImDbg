@@ -3,6 +3,7 @@
 #include "ImDbgEngine.h"
 #include "ImDbgProfiler.h"
 #include "ImDbgLogViewer.h"
+#include "ImDbgLoading.h"
 #include "ImDbgSettings.h"
 #include "Misc/FileHelper.h"
 
@@ -42,6 +43,10 @@ void FImDbgManager::Initialize()
 	TSharedPtr<FImDbgProfiler> ProfilerExt = MakeShared<FImDbgProfiler>();
 	ProfilerExt->Initialize();
 	RegisterDebuggerExtension(ProfilerExt);
+
+	TSharedPtr<FImDbgLoading> LoadExt = MakeShared<FImDbgLoading>();
+	LoadExt->Initialize();
+	RegisterDebuggerExtension(LoadExt);
 
 	TSharedPtr<FImDbgLogViewer> LogExt = MakeShared<FImDbgLogViewer>();
 	LogExt->Initialize();
@@ -205,7 +210,7 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 		{
 			for (TSharedPtr<FImDbgExtension> DebugExt : Extensions)
 			{
-				DebugExt->ShowMenu();
+				DebugExt->ShowMenu(DeltaTime);
 			}
 		}
 

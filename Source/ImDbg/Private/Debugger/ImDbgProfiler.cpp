@@ -27,7 +27,7 @@ void FImDbgProfiler::Initialize()
 	MemoryProfiler = MakeShared<FImDbgMemoryProfiler>(&bShowMemoryProfiler);
 }
 
-void FImDbgProfiler::ShowMenu()
+void FImDbgProfiler::ShowMenu(float InDeltaTime)
 {
 	if (ImGui::BeginMenu(IDB_PROFILER_CATRGORY))
 	{
@@ -69,12 +69,12 @@ void FImDbgProfiler::ShowMenu()
 
 	if (bShowGPUProfiler && GPUProfiler)
 	{
-		GPUProfiler->ShowMenu();
+		GPUProfiler->ShowMenu(InDeltaTime);
 	}
 
 	if (bShowMemoryProfiler && MemoryProfiler)
 	{
-		MemoryProfiler->ShowMenu();
+		MemoryProfiler->ShowMenu(InDeltaTime);
 	}
 }
 
