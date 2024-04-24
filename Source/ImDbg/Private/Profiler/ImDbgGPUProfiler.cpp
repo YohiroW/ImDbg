@@ -210,6 +210,7 @@ void FImDbgGPUProfiler::UnRegisterDelegate()
 
 void FImDbgGPUProfiler::OnHandleNewFrame(int64 Frame)
 {
+#if STATS
 	// Collect GPU every 4 frame
 	static int32 FrameCounter = 0;
 	FrameCounter = (FrameCounter +1) % 4;
@@ -268,6 +269,7 @@ void FImDbgGPUProfiler::OnHandleNewFrame(int64 Frame)
 			}
 		}
 	}
+#endif
 }
 
 void FImDbgGPUProfiler::SetText(const FString& InPassName, const double& InTime)
