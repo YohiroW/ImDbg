@@ -52,8 +52,6 @@ public:
 	// Show stats like 'stat unit'
 	void ShowOverlay();
 
-	FVector GetPlayerLocation();
-
 	bool IsTracked(const FString& InCommand);
 	TArray<FString> GetCommandsByCategory(const FString& InCategory);
 

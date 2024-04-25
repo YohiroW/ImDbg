@@ -59,8 +59,7 @@ ImVec4 FImDbgLogViewer::GetVerbosityColor(const ELogVerbosity::Type Verbosity) c
 	case ELogVerbosity::Log:	      return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	case ELogVerbosity::Verbose:      return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	case ELogVerbosity::VeryVerbose:  return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-	default: 
-		return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	default:                          return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 }
 

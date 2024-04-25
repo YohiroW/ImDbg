@@ -1,5 +1,7 @@
 #include "ImDbgLoading.h"
 #include "EngineUtils.h"
+#include "Engine/LevelStreamingVolume.h"
+#include <implot.h>
 
 FImDbgLoading::FImDbgLoading()
 {
@@ -22,9 +24,7 @@ void FImDbgLoading::ShowMenu(float InDeltaTime)
 	{
 		if (ImGui::Begin("LoadingViewer", &bEnabled))
 		{
-			if (ImGui::RadioButton("All", FilterMode == 0)) { FilterMode = 0; } ImGui::SameLine();
-			if (ImGui::RadioButton("Async", FilterMode == 1)) { FilterMode = 1; } ImGui::SameLine();
-			if (ImGui::RadioButton("Sync", FilterMode == 2)) { FilterMode = 2; }
+			ShowLoadingGraph();
 			ImGui::Separator();
 			ShowLoadingViewer();
 			ImGui::End();
@@ -38,6 +38,10 @@ void FImDbgLoading::ShowLoadingViewer()
 	{
 		if (ImGui::BeginTabItem("Package"))
 		{
+			if (ImGui::RadioButton("All", FilterMode == 0)) { FilterMode = 0; } ImGui::SameLine();
+			if (ImGui::RadioButton("Async", FilterMode == 1)) { FilterMode = 1; } ImGui::SameLine();
+			if (ImGui::RadioButton("Sync", FilterMode == 2)) { FilterMode = 2; }
+			ImGui::Separator();
 			ShowPackageLoadInfo();
 			ImGui::EndTabItem();
 		}
@@ -123,14 +127,56 @@ void FImDbgLoading::ShowMapLoadInfo()
 					DisplayName = FString("> ").Append(DisplayName);
 				}
 
-				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(*DisplayName));
-				ImGui::TableNextColumn(); ImGui::Text("%s", TCHAR_TO_ANSI(StatusName));
-				ImGui::TableNextColumn(); ImGui::Text("%.2f", LoadTime);
-				ImGui::TableNextColumn(); ImGui::Text("%d", LevelStatus.ActorCount);
+				ImVec4 Color = GetLevelStatusColor(LevelStatus.StreamingStatus);
+
+				ImGui::TableNextColumn(); ImGui::TextColored(Color, "%s", TCHAR_TO_ANSI(*DisplayName));
+				ImGui::TableNextColumn(); ImGui::TextColored(Color, "%s", TCHAR_TO_ANSI(StatusName));
+				ImGui::TableNextColumn(); ImGui::TextColored(Color, "%.2f", LoadTime);
+				ImGui::TableNextColumn(); ImGui::TextColored(Color, "%d", LevelStatus.ActorCount);
 			}
 		}
 		ImGui::EndTable();
 	}
+}
+
+void FImDbgLoading::ShowLoadingGraph()
+{
+	if (bUpdateLevelInfo)
+	{
+		UpdateLevelInfo();
+		bUpdateLevelInfo = false;
+	}
+	 
+	if (ImPlot::BeginPlot("MapGraph", ImVec2(-1, 0), ImPlotFlags_NoTitle))
+	{
+		ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+		ImPlot::SetupAxisLimits(ImAxis_X1, -15000.0f, 15000.0f);
+		ImPlot::SetupAxisLimits(ImAxis_Y1, -15000.0f, 15000.0f);
+
+		FVector Location = FImDbgUtil::GetPlayerLocation();
+		ImVec2 PlotLocation = ImPlot::PlotToPixels(ImPlotPoint(Location.X, Location.Y));
+
+		ImPlot::PushPlotClipRect();
+
+		// Draw player
+		ImPlot::GetPlotDrawList()->AddCircleFilled(PlotLocation, 8, IM_COL32(0, 255, 0, 255), 4);
+
+		for (ALevelStreamingVolume* Volume : LevelStreamingVolumes)
+		{
+			FBox Box = GetVolumeExtent(Volume);
+			DrawRect(Box.Min, Box.Max);
+		}
+
+		ImPlot::PopPlotClipRect();
+		ImPlot::EndPlot();
+	}
+}
+
+void FImDbgLoading::DrawRect(const FVector& InMin, const FVector& InMax)
+{
+	ImVec2 PlotMin = ImPlot::PlotToPixels(ImPlotPoint(InMin.X, InMin.Y));
+	ImVec2 PlotMax = ImPlot::PlotToPixels(ImPlotPoint(InMax.X, InMax.Y));
+	ImPlot::GetPlotDrawList()->AddRect(PlotMin, PlotMax, IM_COL32(250, 188, 46, 255));
 }
 
 void FImDbgLoading::Initialize()
@@ -157,4 +203,53 @@ void FImDbgLoading::OnPackageLoadedAsync(const FString& InPackageName)
 void FImDbgLoading::OnPackageLoadedSync(const FString& InPackageName)
 {
 	PackageLoadInfos.Add({ InPackageName, false });
+}
+
+void FImDbgLoading::UpdateLevelInfo()
+{
+	LevelStreamingVolumes = GetLevelStreamingVolumes();
+}
+
+ImVec4 FImDbgLoading::GetLevelStatusColor(const EStreamingStatus& InStreamingStatus) const
+{
+	switch (InStreamingStatus)
+	{
+	case LEVEL_Unloaded:				return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+	case LEVEL_UnloadedButStillAround:  return ImVec4(0.66f, 0.02f, 0.89f, 1.0f);
+	case LEVEL_Loading:				    return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+	case LEVEL_Loaded:					return ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
+	case LEVEL_MakingVisible:			return ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+	case LEVEL_Visible:					return ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+	case LEVEL_Preloading:				return ImVec4(1.0f, 0.0f, 1.0f, 1.0f);
+	case LEVEL_FailedToLoad:			return ImVec4(0.56f, 0.14f, 0.42f, 1.0f);
+	case LEVEL_MakingInvisible:			return ImVec4(1.0f, 0.5f, 0.0f, 1.0f);
+	default:							return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+	};
+}
+
+TArray<ALevelStreamingVolume*> FImDbgLoading::GetLevelStreamingVolumes()
+{
+	TArray<ALevelStreamingVolume*> Volumes;
+	for (TObjectIterator<ALevelStreamingVolume> Iter; Iter; ++Iter)
+	{
+		ALevelStreamingVolume* Volume = *Iter;
+		if (IsValid(Volume))
+		{
+			Volumes.Add(Volume);
+		}
+	}
+
+	return Volumes;
+}
+
+FBox FImDbgLoading::GetVolumeExtent(ALevelStreamingVolume* InVolume)
+{
+	check(InVolume);
+
+	FBox Box;
+	FBoxSphereBounds Bounds = InVolume->GetBounds();
+	Box.Min = Bounds.Origin - Bounds.BoxExtent.X / 2;
+	Box.Max = Bounds.Origin + Bounds.BoxExtent.Y / 2;
+
+	return Box;
 }

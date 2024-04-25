@@ -217,7 +217,7 @@ void FImDbgManager::ShowMainMenu(float DeltaTime)
 		if (true)
 		{
 			ImGui::SameLine();
-			FVector Location = GetPlayerLocation();
+			FVector Location = FImDbgUtil::GetPlayerLocation();
 			ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "X: %.01f Y: %.01f Z: %.01f", Location.X, Location.Y, Location.Z);
 
 			ImGui::SameLine(ImGui::GetWindowWidth() - 260.0f);
@@ -323,26 +323,6 @@ void FImDbgManager::ShowOverlay()
 		}
 		ImGui::End();
 	}
-}
-
-FVector FImDbgManager::GetPlayerLocation()
-{
-	ULocalPlayer* Player = (GEngine && GWorld) ? GEngine->GetFirstGamePlayer(GWorld) : nullptr;
-	FVector PlayerLoc = FVector::ZeroVector;
-	if (Player)
-	{
-		APlayerController* Controller = Player->GetPlayerController(GWorld);
-	
-		if (Controller)
-		{
-			if (auto Pawn = Controller->GetPawn())
-			{
-				PlayerLoc = Pawn->K2_GetActorLocation();
-			}
-		}
-	}
-
-	return PlayerLoc;
 }
 
 bool FImDbgManager::IsTracked(const FString& InCommand)

@@ -30,67 +30,6 @@ namespace ImDbg
 	};
 }
 
-// utility structure for realtime plot
-struct ScrollingBuffer
-{
-	int MaxSize;
-	int Offset;
-	ImVector<ImVec2> Data;
-
-	ScrollingBuffer(int max_size = 2000)
-	{
-		MaxSize = max_size;
-		Offset = 0;
-		Data.reserve(MaxSize);
-	}
-
-	void AddPoint(float x, float y)
-	{
-		if (Data.size() < MaxSize)
-		{
-			Data.push_back(ImVec2(x, y));
-		}
-		else
-		{
-			Data[Offset] = ImVec2(x, y);
-			Offset = (Offset + 1) % MaxSize;
-		}
-	}
-
-	void Erase()
-	{
-		if (Data.size() > 0)
-		{
-			Data.shrink(0);
-			Offset = 0;
-		}
-	}
-};
-
-// utility structure for realtime plot
-struct RollingBuffer
-{
-	float Span;
-	ImVector<ImVec2> Data;
-
-	RollingBuffer()
-	{
-		Span = 10.0f;
-		Data.reserve(2000);
-	}
-
-	void AddPoint(float x, float y)
-	{
-		float xmod = fmodf(x, Span);
-		if (!Data.empty() && xmod < Data.back().x)
-		{
-			Data.shrink(0);
-		}
-
-		Data.push_back(ImVec2(xmod, y));
-	}
-};
-
 FImDbgGPUProfiler::FImDbgGPUProfiler(bool* bInEnabled)
 {
 	bEnabled = bInEnabled;
@@ -112,9 +51,9 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 
 	if (ImGui::Begin("GPUProfiler", bEnabled))
 	{
-		static RollingBuffer FrameTimeData, RTTimeData, GPUTimeData, RHITTimeData;
+		static ImDbg::FPlotScrollingData FrameTimeData, RTTimeData, GPUTimeData, RHITTimeData;
 		static ImPlotAxisFlags FlagX = ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_AutoFit;
-		static ImPlotAxisFlags FlagY = ImPlotAxisFlags_AutoFit;
+		static ImPlotAxisFlags FlagY = ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit;
 		static ImPlotLegendFlags FlagLegend = ImPlotLegendFlags_Horizontal;
 
 		static float t = 0;
@@ -129,21 +68,21 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 			GPUTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
 			RHITTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
 
-			if (ImPlot::BeginPlot("GPUGraph", ImVec2(-1,0), ImPlotFlags_NoTitle))
+			if (ImPlot::BeginPlot("GPUGraph", ImVec2(-1, 0), ImPlotFlags_NoTitle | ImPlotFlags_NoMouseText))
 			{
 				ImPlot::SetupAxes(nullptr, nullptr, FlagX, FlagY);
 				ImPlot::SetupLegend(ImPlotLocation_NorthWest, ImPlotLegendFlags_Horizontal | ImPlotLegendFlags_Outside);
-				ImPlot::SetupAxisLimits(ImAxis_X1, 0, 10.0f, ImGuiCond_Always);
+				ImPlot::SetupAxisLimits(ImAxis_X1, t - 10.0f, t, ImGuiCond_Always);
 				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 33.3f);
-				ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+				ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.4f);
 
 				ImPlot::DragLineY(0, &BudgetTag60, ImVec4(0, 1, 0, 1), 1, ImPlotDragToolFlags_NoFit);
 				ImPlot::DragLineY(1, &BudgetTag30, ImVec4(1, 0, 0, 1), 1, ImPlotDragToolFlags_NoFit);
 
-				ImPlot::PlotLine("Frame", &FrameTimeData.Data[0].x, &FrameTimeData.Data[0].y, FrameTimeData.Data.size(), 0, 0, 2 * sizeof(float));
-				ImPlot::PlotLine("Render", &RTTimeData.Data[0].x, &RTTimeData.Data[0].y, RTTimeData.Data.size(), 0, 0, 2 * sizeof(float));
-				ImPlot::PlotLine("GPU", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, 0, 2 * sizeof(float));
-				ImPlot::PlotLine("RHI", &RHITTimeData.Data[0].x, &RHITTimeData.Data[0].y, RHITTimeData.Data.size(), 0, 0, 2 * sizeof(float));
+				ImPlot::PlotLine("Frame", &FrameTimeData.Data[0].x, &FrameTimeData.Data[0].y, FrameTimeData.Data.size(), 0, FrameTimeData.Offset, 2 * sizeof(float));
+				ImPlot::PlotLine("Render", &RTTimeData.Data[0].x, &RTTimeData.Data[0].y, RTTimeData.Data.size(), 0, RTTimeData.Offset, 2 * sizeof(float));
+				ImPlot::PlotLine("GPU", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, GPUTimeData.Offset, 2 * sizeof(float));
+				ImPlot::PlotLine("RHI", &RHITTimeData.Data[0].x, &RHITTimeData.Data[0].y, RHITTimeData.Data.size(), 0, RHITTimeData.Offset, 2 * sizeof(float));
 
 				ImPlot::PopStyleVar();
 				ImPlot::EndPlot();

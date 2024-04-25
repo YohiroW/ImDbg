@@ -86,3 +86,23 @@ void FImDbgUtil::ParseConsoleVariable(FString& InCVarString, FString& OutCategor
 
 	UE_LOG(LogImDbg, Log, TEXT("Parsing[%s]: [category]:%s [display]:%s"), *InCVarString, *OutCategory, *OutCommandDisplayName);
 }
+
+FVector FImDbgUtil::GetPlayerLocation()
+{
+	ULocalPlayer* Player = (GEngine && GWorld) ? GEngine->GetFirstGamePlayer(GWorld) : nullptr;
+	FVector PlayerLoc = FVector::ZeroVector;
+	if (Player)
+	{
+		APlayerController* Controller = Player->GetPlayerController(GWorld);
+
+		if (Controller)
+		{
+			if (auto Pawn = Controller->GetPawn())
+			{
+				PlayerLoc = Pawn->K2_GetActorLocation();
+			}
+		}
+	}
+
+	return PlayerLoc;
+}

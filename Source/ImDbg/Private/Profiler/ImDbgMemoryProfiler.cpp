@@ -124,6 +124,10 @@ void FImDbgMemoryProfiler::ShowTextureMemoryView()
 	// Retrieve mapping from LOD group enum value to text representation.
 	static TArray<FString> TextureGroupNames = UTextureLODSettings::GetTextureGroupNames();
 
+	ImGui::SameLine(ImGui::GetWindowWidth() - 1.25f* ImGui::CalcTextSize("Total: 0000").x);
+	ImGui::Text("Total: "); ImGui::SameLine();
+	ImGui::TextColored(ImVec4(0.56f, 0.75f, 0.49f, 1.0f), "%d", TextureViewInfoList.Num());
+
 	if (ImGui::BeginTable("TextureView", TextureList_Column_Num, ImGuiTableFlags_RowBg 
 		                                                       | ImGuiTableFlags_Borders 
 		                                                       | ImGuiTableFlags_Resizable 

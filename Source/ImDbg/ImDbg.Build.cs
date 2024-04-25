@@ -8,6 +8,8 @@ public class ImDbg : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		OptimizeCode = CodeOptimization.Never;
+
 		if (Target.Configuration == UnrealTargetConfiguration.Development &&
 		   Target.Type == TargetType.Game)
 		{
