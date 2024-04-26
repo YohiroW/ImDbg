@@ -56,10 +56,10 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 
 		if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			StatInfos[EStatType::Frame].PlotData.AddPoint(t, Millis);
-			StatInfos[EStatType::Draw].PlotData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
-			StatInfos[EStatType::GPU].PlotData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
-			StatInfos[EStatType::RHI].PlotData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
+			StatInfos[EStatType::Frame].PlotData.AddPoint(Timer, Millis);
+			StatInfos[EStatType::Draw].PlotData.AddPoint(Timer, FPlatformTime::ToMilliseconds(GRenderThreadTime));
+			StatInfos[EStatType::GPU].PlotData.AddPoint(Timer, FPlatformTime::ToMilliseconds(GGPUFrameTime));
+			StatInfos[EStatType::RHI].PlotData.AddPoint(Timer, FPlatformTime::ToMilliseconds(GRHIThreadTime));
 
 			ShowAverage();
 			ImGui::Separator();
@@ -68,7 +68,7 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 			{
 				ImPlot::SetupAxes(nullptr, nullptr, FlagAxisX, FlagAxisY);
 				ImPlot::SetupLegend(ImPlotLocation_NorthWest, ImPlotLegendFlags_Horizontal | ImPlotLegendFlags_Outside);
-				ImPlot::SetupAxisLimits(ImAxis_X1, t - 10.0f, t, ImGuiCond_Always);
+				ImPlot::SetupAxisLimits(ImAxis_X1, Timer - 10.0f, Timer, ImGuiCond_Always);
 				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 33.3f);
 				ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.4f);
 
@@ -101,7 +101,7 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 		}
 		if (ImGui::CollapsingHeader("GPU Time", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ShowGPUTimeTable()
+			ShowGPUTimeTable();
 		}
 		ImGui::End();
 	}
