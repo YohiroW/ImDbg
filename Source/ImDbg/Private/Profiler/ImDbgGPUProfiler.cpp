@@ -3,9 +3,6 @@
 #include <imgui_internal.h>
 #include <implot.h>
 
-#define IMDBG_BUDGET_TAG_60 16.667
-#define IMDBG_BUDGET_TAG_30 33.333
-
 namespace ImDbg
 {
 	struct FGroupFilter
@@ -33,8 +30,11 @@ namespace ImDbg
 FImDbgGPUProfiler::FImDbgGPUProfiler(bool* bInEnabled)
 {
 	bEnabled = bInEnabled;
-	BudgetTag60 = IMDBG_BUDGET_TAG_60;
-	BudgetTag30 = IMDBG_BUDGET_TAG_30;
+
+	StatInfos[EStatType::Frame].Name = "Frame";
+	StatInfos[EStatType::Draw].Name = "Draw";
+	StatInfos[EStatType::RHI].Name = "RHI";
+	StatInfos[EStatType::GPU].Name = "GPU";
 }
 
 FImDbgGPUProfiler::~FImDbgGPUProfiler()
@@ -51,38 +51,49 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 
 	if (ImGui::Begin("GPUProfiler", bEnabled))
 	{
-		static ImDbg::FPlotScrollingData FrameTimeData, RTTimeData, GPUTimeData, RHITTimeData;
-		static ImPlotAxisFlags FlagX = ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_AutoFit;
-		static ImPlotAxisFlags FlagY = ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit;
-		static ImPlotLegendFlags FlagLegend = ImPlotLegendFlags_Horizontal;
-
-		static float t = 0;
-
-		t += InDeltaTime;
+		Timer += InDeltaTime;
 		const float Millis = InDeltaTime * 1000.0f;
 
 		if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			FrameTimeData.AddPoint(t, Millis);
-			RTTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
-			GPUTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
-			RHITTimeData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
+			StatInfos[EStatType::Frame].PlotData.AddPoint(t, Millis);
+			StatInfos[EStatType::Draw].PlotData.AddPoint(t, FPlatformTime::ToMilliseconds(GRenderThreadTime));
+			StatInfos[EStatType::GPU].PlotData.AddPoint(t, FPlatformTime::ToMilliseconds(GGPUFrameTime));
+			StatInfos[EStatType::RHI].PlotData.AddPoint(t, FPlatformTime::ToMilliseconds(GRHIThreadTime));
+
+			ShowAverage();
+			ImGui::Separator();
 
 			if (ImPlot::BeginPlot("GPUGraph", ImVec2(-1, 0), ImPlotFlags_NoTitle | ImPlotFlags_NoMouseText))
 			{
-				ImPlot::SetupAxes(nullptr, nullptr, FlagX, FlagY);
+				ImPlot::SetupAxes(nullptr, nullptr, FlagAxisX, FlagAxisY);
 				ImPlot::SetupLegend(ImPlotLocation_NorthWest, ImPlotLegendFlags_Horizontal | ImPlotLegendFlags_Outside);
 				ImPlot::SetupAxisLimits(ImAxis_X1, t - 10.0f, t, ImGuiCond_Always);
 				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 33.3f);
 				ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.4f);
 
-				ImPlot::DragLineY(0, &BudgetTag60, ImVec4(0, 1, 0, 1), 1, ImPlotDragToolFlags_NoFit);
-				ImPlot::DragLineY(1, &BudgetTag30, ImVec4(1, 0, 0, 1), 1, ImPlotDragToolFlags_NoFit);
+				for (int32 i = 0; i< EStatType::Num; ++i)
+				{
+					GeneraStatInfo Info = StatInfos[i];
+					ImDbg::FPlotScrollingData PlotData = Info.PlotData;
+					ImPlot::PlotLine(Info.Name, &PlotData.Data[0].x, &PlotData.Data[0].y, PlotData.Data.size(), 0, PlotData.Offset, 2 * sizeof(float));
+				
+					if (Info.bShowAverage)
+					{
+						double AverageTime = 0;
+						for (ImVec2 Data : PlotData.Data)
+						{
+							AverageTime += Data.y;
+						}
+						AverageTime /= PlotData.Data.size();
 
-				ImPlot::PlotLine("Frame", &FrameTimeData.Data[0].x, &FrameTimeData.Data[0].y, FrameTimeData.Data.size(), 0, FrameTimeData.Offset, 2 * sizeof(float));
-				ImPlot::PlotLine("Render", &RTTimeData.Data[0].x, &RTTimeData.Data[0].y, RTTimeData.Data.size(), 0, RTTimeData.Offset, 2 * sizeof(float));
-				ImPlot::PlotLine("GPU", &GPUTimeData.Data[0].x, &GPUTimeData.Data[0].y, GPUTimeData.Data.size(), 0, GPUTimeData.Offset, 2 * sizeof(float));
-				ImPlot::PlotLine("RHI", &RHITTimeData.Data[0].x, &RHITTimeData.Data[0].y, RHITTimeData.Data.size(), 0, RHITTimeData.Offset, 2 * sizeof(float));
+						ImPlot::DragLineY(99 - i, &AverageTime, ImVec4(1, 1, 1, 0.75f), 1, ImPlotDragToolFlags_NoFit);
+						ImPlot::TagY(AverageTime, ImVec4(1, 1, 1, 0.75f), "%s: %.1lf", Info.Name, AverageTime);
+					}
+
+					// Draw budget frame time
+					ImPlot::DragLineY(0, &BudgetTime, ImVec4(0, 1, 0, 1), 1, ImPlotDragToolFlags_NoFit);
+				}
 
 				ImPlot::PopStyleVar();
 				ImPlot::EndPlot();
@@ -90,37 +101,51 @@ void FImDbgGPUProfiler::ShowMenu(float InDeltaTime)
 		}
 		if (ImGui::CollapsingHeader("GPU Time", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::BeginChild("GPU Time", ImVec2(0, 0), true);
-			ImGui::DragFloat("Threshold", &GPUTimeThreshold, 0.005f, 0.0f, 10.0f, "%.3f", ImGuiSliderFlags_None);
-			ImGui::Separator();
-			if (ImGui::BeginTable("GPU Time", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
-			{
-				ImGui::TableSetupColumn("Pass");
-				ImGui::TableSetupColumn("Time(ms)", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
-				ImGui::TableSetupColumn("Budget(ms)");
-				ImGui::TableHeadersRow();
-
-				for (auto Pair: GPUStats)
-				{
-					if (Pair.Value > 0.0001)
-					{
-						FString PassName = Pair.Key.ToString();
-						PassName.RemoveFromStart(TEXT("Stat_GPU_"));
-						SetText(PassName, Pair.Value);
-						//ImGui::TableNextColumn(); ImGui::Text("0.0");
-					}
-				}
-				ImGui::EndTable();
-			}
-			ImGui::EndChild();
+			ShowGPUTimeTable()
 		}
 		ImGui::End();
 	}
 }
 
-void FImDbgGPUProfiler::ShowGPUGeneral()
+void FImDbgGPUProfiler::ShowGPUTimeTable()
 {
+	ImGui::BeginChild("GPU Time", ImVec2(0, 0), true);
+	ImGui::DragFloat("Threshold", &GPUTimeThreshold, 0.005f, 0.0f, 10.0f, "%.3f", ImGuiSliderFlags_None);
+	ImGui::Separator();
+	if (ImGui::BeginTable("GPU Time", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
+	{
+		ImGui::TableSetupColumn("Pass");
+		ImGui::TableSetupColumn("Time(ms)", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
+		ImGui::TableSetupColumn("Budget(ms)");
+		ImGui::TableHeadersRow();
 
+		for (auto Pair : GPUStats)
+		{
+			if (Pair.Value > 0.0001)
+			{
+				FString PassName = Pair.Key.ToString();
+				PassName.RemoveFromStart(TEXT("Stat_GPU_"));
+				SetText(PassName, Pair.Value);
+				//ImGui::TableNextColumn(); ImGui::Text("0.0");
+			}
+		}
+		ImGui::EndTable();
+	}
+	ImGui::EndChild();
+}
+
+void FImDbgGPUProfiler::ShowAverage()
+{
+	if (ImGui::BeginMenu("Avg"))
+	{
+		for (int32 i = 0; i < EStatType::Num; i++)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+			ImGui::MenuItem(StatInfos[i].Name, "", &StatInfos[i].bShowAverage);
+			ImGui::PopItemFlag();
+		}
+		ImGui::EndMenu();
+	}
 }
 
 void FImDbgGPUProfiler::Initialize()
@@ -150,7 +175,7 @@ void FImDbgGPUProfiler::UnRegisterDelegate()
 void FImDbgGPUProfiler::OnHandleNewFrame(int64 Frame)
 {
 #if STATS
-	// Collect GPU every 4 frame
+	// Collect GPU every 4 frame to avoid lag
 	static int32 FrameCounter = 0;
 	FrameCounter = (FrameCounter +1) % 4;
 	if (FrameCounter != 0)

@@ -37,7 +37,7 @@ public:
 
 	// For traditional level streaming
 	TArray<ALevelStreamingVolume*> GetLevelStreamingVolumes();
-	FBox GetVolumeExtent(ALevelStreamingVolume* InVolume);
+	void GetVolumeExtent(ALevelStreamingVolume* InVolume, FVector (&OutRet)[4]);
 
 	// For world partition
 

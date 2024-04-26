@@ -149,7 +149,7 @@ void FImDbgLoading::ShowLoadingGraph()
 	 
 	if (ImPlot::BeginPlot("MapGraph", ImVec2(-1, 0), ImPlotFlags_NoTitle))
 	{
-		ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+		ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_RangeFit, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_RangeFit);
 		ImPlot::SetupAxisLimits(ImAxis_X1, -15000.0f, 15000.0f);
 		ImPlot::SetupAxisLimits(ImAxis_Y1, -15000.0f, 15000.0f);
 
@@ -163,8 +163,16 @@ void FImDbgLoading::ShowLoadingGraph()
 
 		for (ALevelStreamingVolume* Volume : LevelStreamingVolumes)
 		{
-			FBox Box = GetVolumeExtent(Volume);
-			DrawRect(Box.Min, Box.Max);
+			FVector Ret[4];
+			GetVolumeExtent(Volume, Ret);
+
+			ImVec2 P0 = ImPlot::PlotToPixels(ImPlotPoint(Ret[0].X, Ret[0].Y));
+			ImVec2 P1 = ImPlot::PlotToPixels(ImPlotPoint(Ret[1].X, Ret[1].Y));
+			ImVec2 P2 = ImPlot::PlotToPixels(ImPlotPoint(Ret[2].X, Ret[2].Y));
+			ImVec2 P3 = ImPlot::PlotToPixels(ImPlotPoint(Ret[3].X, Ret[3].Y));
+
+			//ImPlot::GetPlotDrawList()->AddRect(PlotMin, PlotMax, IM_COL32(250, 188, 46, 255));
+			ImPlot::GetPlotDrawList()->AddQuad(P0, P1, P2, P3, IM_COL32(250, 188, 46, 255));
 		}
 
 		ImPlot::PopPlotClipRect();
@@ -176,6 +184,8 @@ void FImDbgLoading::DrawRect(const FVector& InMin, const FVector& InMax)
 {
 	ImVec2 PlotMin = ImPlot::PlotToPixels(ImPlotPoint(InMin.X, InMin.Y));
 	ImVec2 PlotMax = ImPlot::PlotToPixels(ImPlotPoint(InMax.X, InMax.Y));
+
+
 	ImPlot::GetPlotDrawList()->AddRect(PlotMin, PlotMax, IM_COL32(250, 188, 46, 255));
 }
 
@@ -242,14 +252,23 @@ TArray<ALevelStreamingVolume*> FImDbgLoading::GetLevelStreamingVolumes()
 	return Volumes;
 }
 
-FBox FImDbgLoading::GetVolumeExtent(ALevelStreamingVolume* InVolume)
+void FImDbgLoading::GetVolumeExtent(ALevelStreamingVolume* InVolume, FVector(&OutRet)[4])
 {
 	check(InVolume);
 
 	FBox Box;
 	FBoxSphereBounds Bounds = InVolume->GetBounds();
-	Box.Min = Bounds.Origin - Bounds.BoxExtent.X / 2;
-	Box.Max = Bounds.Origin + Bounds.BoxExtent.Y / 2;
 
-	return Box;
+	OutRet[0] = Bounds.Origin + FVector(-Bounds.BoxExtent.X, Bounds.BoxExtent.Y, 0);
+	OutRet[1] = Bounds.Origin + FVector(Bounds.BoxExtent.X, Bounds.BoxExtent.Y, 0);
+	OutRet[2] = Bounds.Origin + FVector(Bounds.BoxExtent.X, -Bounds.BoxExtent.Y, 0);
+	OutRet[3] = Bounds.Origin + FVector(-Bounds.BoxExtent.X, -Bounds.BoxExtent.Y, 0);
+
+	const FRotator& Rotation = InVolume->GetActorRotation();
+	FTransform Transform = FTransform(Rotation);
+
+	OutRet[0] = Transform.TransformPosition(OutRet[0]);
+	OutRet[1] = Transform.TransformPosition(OutRet[1]);
+	OutRet[2] = Transform.TransformPosition(OutRet[2]);
+	OutRet[3] = Transform.TransformPosition(OutRet[3]);
 }
